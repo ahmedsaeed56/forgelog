@@ -250,6 +250,7 @@ textarea{min-height:80px;resize:vertical}
     <div class="row" style="margin-top:10px">
       <button class="btn" id="createPlan">Create plan</button>
       <button class="btn ghost" id="loadTemplate">Load the 18-day LegalSpy sprint</button>
+      <button class="btn ghost" id="loadClients">Load the client-hunting plan</button>
     </div>
   </section>
 </div>
@@ -276,7 +277,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="hero" style="grid-template-columns:1fr"><div><h1 id="progTitle">Progress</h1><p class="hint" id="progSub"></p></div></div>
   <div class="stats" id="stats"></div>
   <section class="block"><h2>Concepts covered</h2><p class="hint">Finished tasks per concept tag, across every plan.</p><div class="chart" id="chConcepts"></div></section>
-  <section class="block"><h2>Consistency, last 12 weeks</h2><p class="hint">Each square is a day, coloured by its day score. Tap a square to open that day.</p><div class="chart" id="heat"></div></section>
+  <section class="block"><h2>Consistency calendar</h2><p class="hint">Each square is a day, coloured by its day score — green 75+, amber 50–74, red below 50. Use the arrows to move between years (up to 2030); tap a day to open it.</p><div class="chart" id="heat"></div></section>
 </div>
 
 <!-- ============================ SETTINGS ============================ -->
@@ -417,6 +418,38 @@ const SPRINT_TEMPLATE = `## Ingestion rebuild | RAG, Context engineering
 - Closed-book: explain every concept out loud
 - README case study with every before/after table
 - Draft the LinkedIn post`;
+
+const CLIENT_TEMPLATE = `## Offer, niche and place | Client hunting
+- Write the 3 answers: what I sell, who I sell it to, where they are
+- Pick ONE niche and ONE city to start with
+- Write the proof-of-problem checklist: what pain is visible on their website
+
+## Validate the pain | Client hunting
+- Check 5 target websites by hand: how do their clients book, search or get answers?
+- Decide honestly: is the pain real? If not, change the niche before going further
+
+## Lead sheet | Client hunting
+- Create the sheet: name, website, contact, evidence URL, score, reason, status, email draft
+- Find 8–10 leads; every field needs an evidence link — no invented data
+
+## Score and filter | Client hunting
+- Score each lead 1–10 with written rules
+- Reject leads that already solved the problem you sell
+
+## Outreach | Client hunting
+- Draft a personal email per qualified lead: their specific gap + your case study + one clear next step
+- Read every email yourself before sending
+- Check the cold-email rules for the target country before sending
+
+## Follow-up | Client hunting
+- Log every reply in the sheet
+- Send one polite follow-up after 4–5 days to anyone who didn't reply
+- Note what worked: which niche, subject line and offer got replies
+
+## Automate the pipeline | Client hunting, Agentic RAG, Harness engineering
+- Build the hunt → score → draft agent (LangGraph + a browsing tool)
+- Keep a human review step before anything is sent
+- Schedule it daily and track replies per 10 emails`;
 
 const DEFAULT_HABITS = [
   {id:"h1", text:"Job keep-alive: reply to recruiters (15 min)", slot:"morning"},
@@ -804,17 +837,57 @@ function renderProgress(){
       const v=el("text",{x:W-62,y:y+15,"font-size":13,fill:"var(--muted)"},svg); v.textContent=`${counts[tag]||0}/${totals[tag]}`; });
     host.appendChild(svg); }
 
-  // heatmap
-  const hh=document.getElementById("heat"); const today=keyToDate(todayKey()); const dow=(today.getDay()+6)%7;
-  const start=addDays(todayKey(), -(7*11+dow)); const cs=18,gap=4,LW=30;
-  const hs=el("svg",{viewBox:`0 0 ${LW+12*(cs+gap)} ${7*(cs+gap)+16}`,role:"img","aria-label":"Day scores for 12 weeks"});
-  ["Mon","","Wed","","Fri","","Sun"].forEach((l,i)=>{ if(l){ const t=el("text",{x:0,y:i*(cs+gap)+cs-4,"font-size":12,fill:"var(--muted)"},hs); t.textContent=l; } });
-  for(let c=0;c<12;c++) for(let r=0;r<7;r++){ const k=addDays(start,c*7+r); if(k>todayKey()) continue;
-    const sc=dayScore(k); const rect=el("rect",{x:LW+c*(cs+gap),y:r*(cs+gap),width:cs,height:cs,rx:4,
-      fill: sc===null?"none": sc>=75?"var(--done)": sc>=50?"var(--forge)":"var(--miss)", "fill-opacity": sc===null?0:0.35+0.65*sc/100, stroke: sc===null?"var(--line)":"none"},hs);
-    rect.style.cursor="pointer"; rect.addEventListener("click",()=>{ current=k; document.querySelector('nav.tabs button[data-tab="today"]').click(); });
-    const tt=el("title",{},rect); tt.textContent=`${k}: ${sc===null?"not logged":"score "+sc}`; }
-  hh.innerHTML=""; hh.appendChild(hs);
+  yearCalendar(document.getElementById("heat"), k=>dayScore(k),
+    {good:"var(--done)", mid:"var(--forge)", bad:"var(--miss)"},
+    k=>{ current=k; document.querySelector('nav.tabs button[data-tab="today"]').click(); },
+    keys[0], renderProgress);
+}
+
+/* ------------------------------------------------------------------
+   YEAR CALENDAR (any year up to 2030, tap a day to open it)
+------------------------------------------------------------------ */
+let heatYear = new Date().getFullYear();
+const CAL_MAX_YEAR = Math.max(2030, new Date().getFullYear());
+function yearCalendar(host, scoreOf, colors, onPick, earliestKey, rerender){
+  const thisYear = new Date().getFullYear();
+  const minYear = Math.min(thisYear, earliestKey ? +earliestKey.slice(0,4) : thisYear);
+  heatYear = Math.min(Math.max(heatYear, minYear), CAL_MAX_YEAR);
+  host.innerHTML="";
+  const nav=document.createElement("div"); nav.className="row"; nav.style.margin="4px 0 10px";
+  const prev=document.createElement("button"); prev.className="iconbtn"; prev.textContent="‹"; prev.setAttribute("aria-label","Previous year");
+  const next=document.createElement("button"); next.className="iconbtn"; next.textContent="›"; next.setAttribute("aria-label","Next year");
+  const lab=document.createElement("b"); lab.textContent=String(heatYear); lab.style.fontSize="1.15rem"; lab.style.minWidth="4ch"; lab.style.textAlign="center";
+  prev.disabled = heatYear<=minYear; next.disabled = heatYear>=CAL_MAX_YEAR;
+  prev.onclick=()=>{ heatYear--; rerender(); }; next.onclick=()=>{ heatYear++; rerender(); };
+  const jump=document.createElement("button"); jump.className="btn ghost"; jump.textContent="This year"; jump.style.padding="5px 11px";
+  jump.onclick=()=>{ heatYear=thisYear; rerender(); };
+  nav.append(prev, lab, next, jump);
+  const cs=14, gap=3, mw=7*(cs+gap), mh=6*(cs+gap)+22, colsN=3, padX=24, padY=14;
+  const W=colsN*mw+(colsN-1)*padX, H=4*mh+3*padY;
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.setAttribute("role","img"); svg.setAttribute("aria-label",`Day scores for ${heatYear}`);
+  const mk=(t,a)=>{ const e=document.createElementNS("http://www.w3.org/2000/svg",t); for(const k in a) e.setAttribute(k,a[k]); svg.appendChild(e); return e; };
+  const tKey=(()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  for(let m=0;m<12;m++){
+    const ox=(m%colsN)*(mw+padX), oy=Math.floor(m/colsN)*(mh+padY);
+    const t=mk("text",{x:ox,y:oy+13,"font-size":13,"font-weight":700,fill:"var(--ink)"});
+    t.textContent=new Date(heatYear,m,1).toLocaleDateString("en-GB",{month:"short"});
+    const offset=(new Date(heatYear,m,1).getDay()+6)%7, n=new Date(heatYear,m+1,0).getDate();
+    for(let d=1; d<=n; d++){
+      const idx=offset+d-1, x=ox+(idx%7)*(cs+gap), y=oy+20+Math.floor(idx/7)*(cs+gap);
+      const key=`${heatYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const future=key>tKey, sc=future?null:scoreOf(key);
+      const r=mk("rect",{x,y,width:cs,height:cs,rx:3,
+        fill: sc===null ? "none" : sc>=75 ? colors.good : sc>=50 ? colors.mid : colors.bad,
+        "fill-opacity": sc===null ? 0 : 0.35+0.65*sc/100,
+        stroke: key===tKey ? "var(--ink)" : sc===null ? "var(--line)" : "none",
+        "stroke-width": key===tKey ? 2 : 1, opacity: future ? 0.45 : 1});
+      if(!future){ r.style.cursor="pointer"; r.addEventListener("click",()=>onPick(key)); }
+      const tt=document.createElementNS("http://www.w3.org/2000/svg","title");
+      tt.textContent=`${key}: ${future?"upcoming":sc===null?"not logged":"score "+sc}`; r.appendChild(tt);
+    }
+  }
+  host.append(nav, svg);
 }
 
 /* ------------------------------------------------------------------
@@ -875,6 +948,7 @@ function bind(){
 
   document.getElementById("pStart").value=todayKey();
   document.getElementById("loadTemplate").onclick=()=>{ document.getElementById("pName").value="LegalSpy sprint"; document.getElementById("pText").value=SPRINT_TEMPLATE; };
+  document.getElementById("loadClients").onclick=()=>{ document.getElementById("pName").value="Client hunting"; document.getElementById("pText").value=CLIENT_TEMPLATE; };
   document.getElementById("createPlan").onclick=()=>{
     const name=document.getElementById("pName").value.trim(), start=document.getElementById("pStart").value||todayKey(), text=document.getElementById("pText").value;
     const p=createPlan(name,start,text);
