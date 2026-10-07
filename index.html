@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forge Log — build, test, ship</title>
+<meta name="theme-color" content="#18202B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Forge Log">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EEF0F4; --surface:#F8F9FB; --ink:#18202B; --muted:#5D6573; --line:#D4D8E0; --track:#DCE0E8; --plate:#E3E7EE;
+  --forge:#D9801C; --done:#2F8A5B; --miss:#C2453A; --carry:#3A73C4; --deep:#6C4FC4; --test:#178A8A; --hab:#D9801C;
+  --focus:#3A73C4;
+  --font:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10141B; --surface:#171D26; --ink:#E5E9F0; --muted:#97A0AE; --line:#29313D; --track:#252D39; --plate:#202836;
+    --forge:#F0A341; --done:#4DB37E; --miss:#E57364; --carry:#6B9BE0; --deep:#9A82E6; --test:#3DB6B6; --hab:#F0A341; --focus:#6B9BE0;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10141B; --surface:#171D26; --ink:#E5E9F0; --muted:#97A0AE; --line:#29313D; --track:#252D39; --plate:#202836;
+  --forge:#F0A341; --done:#4DB37E; --miss:#E57364; --carry:#6B9BE0; --deep:#9A82E6; --test:#3DB6B6; --hab:#F0A341; --focus:#6B9BE0;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{line-height:1.45;font-size:16px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+[hidden]{display:none!important}
+
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 56px;overflow-x:clip}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{max-width:1040px;margin:0 auto;padding:10px 16px 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;font-weight:700;font-size:1.25rem;letter-spacing:-.01em}
+.brand .logo{width:34px;height:34px;flex:none}
+.brand .txt{display:flex;flex-direction:column;line-height:1.15}
+.brand small{font-weight:400;font-size:.76rem;color:var(--muted);letter-spacing:0}
+.datebox{display:flex;align-items:center;gap:6px}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;min-width:38px;height:38px;cursor:pointer;font-size:1.05rem;display:inline-grid;place-items:center}
+.datebox input{border:1px solid var(--line);background:var(--surface);border-radius:10px;height:38px;padding:0 8px}
+nav.tabs{max-width:1040px;margin:0 auto;padding:0 16px 8px;display:flex;gap:4px;overflow-x:auto;align-items:center}
+nav.tabs button{border:0;background:transparent;padding:7px 12px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+
+.hero{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;padding:20px 0 8px}
+.score{width:132px;height:132px;position:relative}
+.score svg{width:132px;height:132px}
+.score .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score .num b{font-size:2.4rem;line-height:1;font-weight:700}
+.score .num span{font-size:.78rem;color:var(--muted)}
+.hero h1{font-size:clamp(1.45rem,4.4vw,2.1rem);line-height:1.12;margin:0 0 6px;font-weight:600;letter-spacing:-.015em}
+.hero p{margin:0;color:var(--muted);max-width:56ch}
+.rings{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px;padding:12px 0 6px}
+.ring{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+.ring svg.r{width:84px;height:84px}
+.ring .ricon{display:inline-flex;width:18px;height:18px;margin-top:2px}
+.ring .ricon svg{width:18px;height:18px}
+.ring .lbl{font-weight:600;font-size:.9rem}
+.ring .val{font-size:.78rem;color:var(--muted)}
+.ring .center{font-weight:700;font-size:14px}
+
+.alert{border:1px solid var(--carry);background:color-mix(in srgb, var(--carry) 10%, var(--surface));border-radius:16px;padding:12px 14px;margin:12px 0}
+.alert.miss{border-color:var(--miss);background:color-mix(in srgb, var(--miss) 9%, var(--surface))}
+.alert h3{margin:0 0 6px;font-size:1rem;display:flex;align-items:center;gap:8px}
+.alert h3 svg{width:20px;height:20px}
+.alert p{margin:0 0 8px;color:var(--muted);font-size:.9rem}
+.alert .row{margin-top:8px}
+
+.plancard{border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:14px 16px;margin:14px 0 4px}
+.plancard .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.plancard h2{margin:0;font-size:1.1rem}
+.plancard .sub{color:var(--muted);font-size:.86rem}
+.pbar{height:10px;border-radius:999px;background:var(--track);overflow:hidden;margin:10px 0 6px}
+.pbar i{display:block;height:100%;background:var(--forge);border-radius:999px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+
+.cols{display:grid;gap:28px}
+.cols>*{min-width:0}
+@media (min-width:860px){.cols{grid-template-columns:1.2fr 1fr}}
+section.block{padding-top:18px;border-top:1px solid var(--line)}
+section.block h2{font-size:1.12rem;margin:0 0 10px;font-weight:600;display:flex;align-items:center;gap:8px}
+section.block h2 .hi{display:inline-flex}
+section.block h2 .hi svg{width:22px;height:22px}
+.hint{color:var(--muted);font-size:.86rem;margin:0 0 10px}
+
+ul.tasks{list-style:none;margin:0;padding:0}
+ul.tasks li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px dashed var(--line)}
+.check{appearance:none;width:24px;height:24px;border:2px solid var(--line);border-radius:8px;margin:1px 0 0;cursor:pointer;display:grid;place-items:center;background:var(--surface)}
+.check:checked{background:var(--done);border-color:var(--done)}
+.check:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.tt{min-width:0}
+.tt .t{overflow-wrap:anywhere}
+li.done .tt .t{color:var(--muted);text-decoration:line-through}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.badge{font-size:.72rem;padding:2px 8px;border-radius:999px;background:var(--plate);color:var(--muted)}
+.badge.carry{background:color-mix(in srgb, var(--carry) 16%, var(--surface));color:var(--carry);font-weight:600}
+.badge.slip{background:color-mix(in srgb, var(--miss) 14%, var(--surface));color:var(--miss);font-weight:600}
+.more{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:2px 6px;border-radius:8px}
+.menu{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.menu button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;cursor:pointer;font-size:.82rem}
+.slot{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row input,.row select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;min-width:0}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:5px 11px;font-size:.85rem}
+.btn.warn{border-color:var(--miss);background:transparent;color:var(--miss)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.85rem;color:var(--muted)}
+.field input,.field select,textarea{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 10px;width:100%}
+textarea{min-height:80px;resize:vertical}
+.scale{display:flex;gap:6px}
+.scale button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0;cursor:pointer}
+.scale button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto;min-width:320px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin:6px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.insights{display:grid;gap:18px}
+@media (min-width:720px){.insights{grid-template-columns:1fr 1fr}}
+.insights ul{margin:0;padding-left:18px}
+.insights li{margin:4px 0}
+.insights h3{font-size:1rem;margin:0 0 6px}
+.ok h3{color:var(--done)} .no h3{color:var(--miss)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:6px 0 16px}
+@media (min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat b{display:block;font-size:1.6rem;font-weight:700;line-height:1.1}
+.stat span{color:var(--muted);font-size:.85rem}
+.habitgrid{border-collapse:collapse;width:100%;font-size:.86rem}
+.habitgrid th,.habitgrid td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--line)}
+.habitgrid th:first-child,.habitgrid td:first-child{text-align:left}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--track)}
+.dot.y{background:var(--done)} .dot.n{background:transparent;border:1.5px solid var(--miss)}
+
+.timeline{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-top:10px}
+.tday{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:8px 6px;text-align:center;cursor:pointer}
+.tday b{display:block;font-size:1.05rem}
+.tday span{font-size:.7rem;color:var(--muted);display:block;line-height:1.2}
+.tday.done{border-color:var(--done);background:color-mix(in srgb, var(--done) 12%, var(--surface))}
+.tday.partial{border-color:var(--forge);background:color-mix(in srgb, var(--forge) 12%, var(--surface))}
+.tday.missed{border-color:var(--miss);background:color-mix(in srgb, var(--miss) 10%, var(--surface))}
+.tday.today{box-shadow:0 0 0 2px var(--ink) inset}
+.planlist{display:grid;gap:12px}
+.dayview{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:12px;background:var(--surface)}
+.banner{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-top:12px}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer}
+.switch input{width:20px;height:20px;accent-color:var(--done)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand"><svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#18202B"/><path d="M120 300h272l-30 52H150z" fill="#F0A341"/><rect x="190" y="352" width="132" height="34" rx="8" fill="#F0A341"/><path d="M150 300c0-66 50-120 106-120h70l-26 52h-44c-34 0-58 30-58 68z" fill="#E5E9F0"/><path d="M300 136l16 34 36 6-26 24 6 36-32-18-32 18 6-36-26-24 36-6z" fill="#F0A341"/></svg><div class="txt">Forge Log<small><span id="planLine">No active plan</span> · <span id="syncNote">Saved on this device</span></small></div></div>
+    <div class="datebox">
+      <button class="iconbtn" id="prevDay" aria-label="Previous day">‹</button>
+      <input type="date" id="dateInput" aria-label="Day">
+      <button class="iconbtn" id="nextDay" aria-label="Next day">›</button>
+      <button class="iconbtn" id="todayBtn" aria-label="Go to today" title="Today">●</button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="today" aria-selected="true">Today</button>
+    <button role="tab" data-tab="plans" aria-selected="false">Plans</button>
+    <button role="tab" data-tab="week" aria-selected="false">This week</button>
+    <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
+    <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
+  </nav>
+</header>
+
+<main class="wrap">
+
+<!-- ============================ TODAY ============================ -->
+<div id="tab-today">
+  <div class="hero">
+    <div class="score"><svg viewBox="0 0 132 132" id="scoreRing"></svg><div class="num"><b id="scoreNum">–</b><span>day score</span></div></div>
+    <div><h1 id="heroLine">Plan your day.</h1><p id="heroSub"></p></div>
+  </div>
+  <div id="alerts"></div>
+  <div class="rings" id="rings"></div>
+  <div id="planCard"></div>
+
+  <div class="cols">
+    <div>
+      <section class="block">
+        <h2 data-icon="hammer">Tasks</h2>
+        <p class="hint">Tick what you actually finished. Unfinished tasks move forward automatically — nothing gets lost.</p>
+        <ul class="tasks" id="taskList"></ul>
+        <div class="row" style="margin-top:12px">
+          <input id="newTask" placeholder="Add a task for this day" style="flex:1 1 200px" aria-label="New task">
+          <button class="btn" id="addTask">Add</button>
+        </div>
+      </section>
+      <section class="block">
+        <h2 data-icon="routine">Daily routine</h2>
+        <div id="habitList"></div>
+      </section>
+    </div>
+    <div>
+      <section class="block">
+        <h2 data-icon="clock">Deep work</h2>
+        <div class="grid2">
+          <div class="field"><label for="deepHours">Focused hours today</label><input id="deepHours" type="number" inputmode="decimal" step="0.25" min="0" max="16"></div>
+          <div class="field"><label for="concept">Concept of the day</label><input id="concept" placeholder="e.g. hybrid retrieval"></div>
+        </div>
+      </section>
+      <section class="block">
+        <h2 data-icon="brain">Closed-book test</h2>
+        <div class="field"><label>How well could you explain and use it without notes? (1 = not at all, 5 = solid)</label><div class="scale" id="testScore"></div></div>
+      </section>
+      <section class="block">
+        <h2 data-icon="spark">How the day felt</h2>
+        <div class="field"><label>Energy (1–5)</label><div class="scale" id="energy"></div></div>
+        <div class="field" style="margin-top:10px"><label>Focus (1–5)</label><div class="scale" id="focusScale"></div></div>
+        <div class="field" style="margin-top:10px"><label for="notes">Notes — what blocked you, what clicked</label><textarea id="notes"></textarea></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ PLANS ============================ -->
+<div id="tab-plans" hidden>
+  <div class="hero" style="grid-template-columns:1fr"><div><h1>Plans</h1><p class="hint">A plan is a target, not a cage. Run one or several, shift them when life happens, start new ones any time.</p></div></div>
+  <div class="planlist" id="planList"></div>
+  <section class="block" style="margin-top:22px">
+    <h2 data-icon="plus">New plan</h2>
+    <div class="grid2" style="max-width:640px">
+      <div class="field"><label for="pName">Name</label><input id="pName" placeholder="e.g. LegalSpy sprint"></div>
+      <div class="field"><label for="pStart">Start date</label><input id="pStart" type="date"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label for="pText">Days and tasks — one "## Day title | tags" line per day, then "- task" lines</label>
+      <textarea id="pText" style="min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem"></textarea></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="createPlan">Create plan</button>
+      <button class="btn ghost" id="loadTemplate">Load the 18-day LegalSpy sprint</button>
+    </div>
+  </section>
+</div>
+
+<!-- ============================ WEEK ============================ -->
+<div id="tab-week" hidden>
+  <div class="hero" style="grid-template-columns:1fr"><div><h1 id="weekTitle">Last 7 days</h1><p class="hint" id="weekSub"></p></div></div>
+  <div class="insights">
+    <div class="ok"><h3>Went right</h3><ul id="rightList"></ul></div>
+    <div class="no"><h3>Needs work</h3><ul id="wrongList"></ul></div>
+  </div>
+  <section class="block" style="margin-top:20px"><h2>Tasks: done vs slipped</h2>
+    <div class="legend"><span><i style="background:var(--done)"></i>done that day</span><span><i style="background:var(--miss)"></i>slipped to a later day</span></div>
+    <div class="chart" id="chTasks"></div></section>
+  <section class="block"><h2>Deep work hours</h2><div class="chart" id="chDeep"></div></section>
+  <section class="block"><h2>Closed-book tests and focus</h2>
+    <div class="legend"><span><i style="background:var(--test)"></i>test score (1–5)</span><span><i style="background:var(--forge)"></i>focus (1–5)</span></div>
+    <div class="chart" id="chTest"></div></section>
+  <section class="block"><h2>Routine</h2><div class="chart"><table class="habitgrid" id="habitGrid"></table></div></section>
+</div>
+
+<!-- ============================ PROGRESS ============================ -->
+<div id="tab-progress" hidden>
+  <div class="hero" style="grid-template-columns:1fr"><div><h1 id="progTitle">Progress</h1><p class="hint" id="progSub"></p></div></div>
+  <div class="stats" id="stats"></div>
+  <section class="block"><h2>Concepts covered</h2><p class="hint">Finished tasks per concept tag, across every plan.</p><div class="chart" id="chConcepts"></div></section>
+  <section class="block"><h2>Consistency, last 12 weeks</h2><p class="hint">Each square is a day, coloured by its day score. Tap a square to open that day.</p><div class="chart" id="heat"></div></section>
+</div>
+
+<!-- ============================ SETTINGS ============================ -->
+<div id="tab-settings" hidden>
+  <div class="hero" style="grid-template-columns:1fr"><div><h1>Settings</h1></div></div>
+  <div class="grid2" style="max-width:560px">
+    <div class="field"><label for="setDeep">Deep-work target (hours a day)</label><input id="setDeep" type="number" step="0.5" min="1" max="14"></div>
+  </div>
+  <label class="switch" style="margin:14px 0"><input type="checkbox" id="setCarry"> Move unfinished tasks to today automatically</label>
+  <section class="block">
+    <h2>Daily routine items</h2>
+    <p class="hint">These appear every day, grouped by time of day.</p>
+    <div id="habitEditor"></div>
+    <div class="row" style="margin-top:10px">
+      <input id="newHabit" placeholder="New routine item" style="flex:1 1 220px" aria-label="New routine item">
+      <select id="newHabitSlot" aria-label="Time of day"><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select>
+      <button class="btn" id="addHabit">Add</button>
+    </div>
+  </section>
+  <div class="row" style="margin-top:18px">
+    <button class="btn" id="saveSettings">Save settings</button>
+    <button class="btn ghost" id="backupBtn">Back up all data</button>
+    <label class="btn ghost" for="restoreFile">Restore from backup</label>
+    <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    <button class="btn ghost" id="exportCsv">Export CSV</button>
+    <button class="btn ghost" id="themeBtn">Switch theme</button>
+  </div>
+  <div class="banner" id="storageNote"></div>
+</div>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+/* ------------------------------------------------------------------
+   ICONS (hand-drawn SVG)
+------------------------------------------------------------------ */
+const ICONS = {
+hammer:`<svg viewBox="0 0 24 24"><rect x="3" y="4" width="11" height="6" rx="1.5" fill="var(--forge)"/><rect x="9.5" y="9" width="3" height="12" rx="1.2" fill="var(--ink)"/></svg>`,
+routine:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--forge)" stroke-width="2.2"/><path d="M12 7v5l3 2" stroke="var(--ink)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+clock:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="var(--deep)"/><path d="M12 7v5l3.5 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+brain:`<svg viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 3V4z" fill="var(--test)"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 3V4z" fill="var(--test)" opacity=".7"/></svg>`,
+spark:`<svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" fill="var(--forge)"/></svg>`,
+plus:`<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="6" fill="var(--forge)"/><path d="M12 8v8M8 12h8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+tasks:`<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="var(--done)"/><path d="M7.5 12.5l3 3 6-7" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+carry:`<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3" stroke="var(--carry)" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" stroke="var(--carry)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+warn:`<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2z" fill="var(--miss)"/><path d="M12 10v5M12 18v.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>`
+};
+
+/* ------------------------------------------------------------------
+   CONCEPT TAG COLOURS
+------------------------------------------------------------------ */
+const TAG_COLORS = ["#6C4FC4","#178A8A","#D9801C","#3A73C4","#C2453A","#2F8A5B","#A13F8C","#8A6A12","#4B5BB5","#2E8AA8"];
+function tagColor(tag){ let h=0; for(const c of tag) h=(h*31+c.charCodeAt(0))>>>0; return TAG_COLORS[h%TAG_COLORS.length]; }
+
+/* ------------------------------------------------------------------
+   TEMPLATE: the 18-day LegalSpy sprint
+------------------------------------------------------------------ */
+const SPRINT_TEMPLATE = `## Ingestion rebuild | RAG, Context engineering
+- Rebuild ingestion from memory: extraction → chunking → metadata (court, year, case no., doc_id) → embedding with "passage:" prefix → store
+- Compare with existing code and apply the fixes
+- Re-embed the library and check chunk counts
+
+## Retrieval rebuild | RAG, Graph engineering, Harness engineering
+- "query:" prefix + metadata filters in dense and BM25
+- RRF fusion + reranker + synthesis
+- Rebuild the LangGraph flow and deploy
+- Wire LangSmith tracing
+
+## Evaluation | Evaluation, Harness engineering
+- Build the eval set: component, trajectory, end-to-end
+- LLM-as-judge for faithfulness
+- Run old vs new build → before/after table
+
+## Revision | Revision
+- Closed-book: explain days 1–3 out loud
+- Solve one fresh RAG problem without notes
+- Fix anything that broke
+
+## Guardrails + decision models | Guardrails, Harness engineering, Context engineering, Graph engineering
+- Schema-enforced router + confidence gate (clarify edge)
+- Guardrail counters
+- Quote verification check
+- Jev vs Gemini judge experiment: accuracy, latency, cost
+
+## Citation extraction | NLP
+- Regex + NER for citations inside judgment text
+- Measure extraction precision on 20 judgments
+
+## GraphRAG part 1 | GraphRAG, Graph engineering
+- Design the graph schema: nodes and edges
+- Load citations into Neo4j and write first Cypher queries
+
+## GraphRAG part 2 | GraphRAG, Context engineering
+- Multi-hop questions: "what cites this?", "is it still good law?"
+- Hybrid graph + vector retrieval with eval scores
+
+## Revision | Revision
+- Closed-book: explain days 5–8 out loud
+- Redo the retrieval design from memory
+
+## Agentic RAG | Agentic RAG, Harness engineering, Graph engineering, Context engineering
+- Plan → retrieve → Jev-graded relevance → retry (cap 2)
+- Report cost and latency vs plain RAG
+
+## MCP + CI | MCP, CI/CD, Harness engineering
+- MCP server exposing search and the citation graph
+- Run the eval set in GitHub Actions on every push
+
+## Multi-agent | Multi-agent, Graph engineering
+- Researcher → drafter → verifier supervisor graph
+- Compare against the single agent; keep it only if better
+
+## Revision | Revision
+- Closed-book: explain days 10–12 out loud
+- Redo the graph schema from memory
+
+## Synthetic data | Fine-tuning
+- Generate drafts from public judgments only
+- Filter with checker + Jev scores (rejection sampling)
+- Send draft pairs to the lawyer to pick
+
+## SFT | Fine-tuning
+- QLoRA SFT on Colab with a 1–3B model
+- Compare against the base model on the eval set
+
+## DPO | RLHF
+- Build chosen/rejected pairs and train DPO
+- Blind A/B against the SFT model
+
+## GRPO | RLHF
+- Citation checker as the reward; short GRPO run
+- Check the pass rate and look for reward hacking
+
+## Revision + case study | Revision
+- Closed-book: explain every concept out loud
+- README case study with every before/after table
+- Draft the LinkedIn post`;
+
+const DEFAULT_HABITS = [
+  {id:"h1", text:"Job keep-alive: reply to recruiters (15 min)", slot:"morning"},
+  {id:"h2", text:"Closed-book test of today's concept", slot:"afternoon"},
+  {id:"h3", text:"Revise older concepts (1, 3 and 7 days ago)", slot:"evening"},
+  {id:"h4", text:"Commit and push today's work", slot:"evening"},
+  {id:"h5", text:"Write tomorrow's first task", slot:"evening"}
+];
+
+/* ------------------------------------------------------------------
+   STATE
+------------------------------------------------------------------ */
+const LS_KEY = "forgelog.v1";
+let S = freshState();
+let current = todayKey();
+let openMenu = null;          // task id whose action menu is open
+let openPlanDay = null;       // {planId, n} expanded in Plans tab
+
+function freshState(){ return {settings:{deepTarget:7, autoCarry:true}, habits:DEFAULT_HABITS.map(h=>({...h})),
+  plans:[], tasks:{}, days:{}, slipLog:[], alerts:[], lastRollover:null}; }
+function todayKey(d){ d=d||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function keyToDate(k){ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); }
+function addDays(k,n){ const d=keyToDate(k); d.setDate(d.getDate()+n); return todayKey(d); }
+function fmtDay(k){ return keyToDate(k).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}); }
+function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
+function day(k){ k=k||current; if(!S.days[k]) S.days[k]={deepHours:null, concept:"", test:0, energy:0, focus:0, notes:"", habits:{}}; return S.days[k]; }
+function num(v){ const n=parseFloat(v); return isFinite(n)?n:null; }
+function plural(n,w){ return `${n} ${w}${n===1?"":"s"}`; }
+
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+function loadLocal(){ try{ const raw=localStorage.getItem(LS_KEY); if(!raw) return;
+  const o=JSON.parse(raw); S={...freshState(), ...o, settings:{...freshState().settings, ...(o.settings||{})}}; }catch(e){} }
+let savedTimer=null;
+function save(){ saveLocal(); const n=document.getElementById("syncNote"); n.textContent="Saved on this device ✓";
+  clearTimeout(savedTimer); savedTimer=setTimeout(()=>n.textContent="Saved on this device",1500); }
+
+/* ------------------------------------------------------------------
+   PLANS
+------------------------------------------------------------------ */
+function parsePlanText(text){
+  const days=[]; let cur=null;
+  text.split(/\r?\n/).forEach(line=>{
+    const l=line.trim(); if(!l) return;
+    if(l.startsWith("##")){ const body=l.replace(/^#+\s*/,""); const [title,tags]=body.split("|");
+      cur={title:(title||"").trim()||`Day ${days.length+1}`, tags:(tags||"").split(",").map(t=>t.trim()).filter(Boolean), tasks:[]}; days.push(cur); }
+    else if(/^[-*•]/.test(l)){ if(!cur){ cur={title:"Day 1",tags:[],tasks:[]}; days.push(cur); } cur.tasks.push(l.replace(/^[-*•]\s*/,"")); }
+  });
+  return days.filter(d=>d.tasks.length);
+}
+function createPlan(name, start, text){
+  const days=parsePlanText(text); if(!days.length) return null;
+  const plan={id:uid(), name:name||"Untitled plan", start, active:true, days:days.map((d,i)=>({n:i+1, title:d.title, tags:d.tags}))};
+  days.forEach((d,i)=>{ const date=addDays(start,i);
+    d.tasks.forEach(t=>{ const id=uid(); S.tasks[id]={id, text:t, planId:plan.id, n:i+1, tags:d.tags, date, origDate:date, done:false, doneAt:null, dropped:false, carried:0}; }); });
+  S.plans.push(plan); return plan;
+}
+function planTasks(pid){ return Object.values(S.tasks).filter(t=>t.planId===pid); }
+function planOf(t){ return t.planId ? S.plans.find(p=>p.id===t.planId) : null; }
+function activePlans(){ return S.plans.filter(p=>p.active); }
+function planDayStatus(plan, n){
+  const ts=planTasks(plan.id).filter(t=>t.n===n && !t.dropped); if(!ts.length) return "empty";
+  const done=ts.filter(t=>t.done).length;
+  if(done===ts.length) return "done";
+  const sched=plan.start ? addDays(plan.start, n-1) : null;
+  if(done>0) return "partial";
+  if(sched && sched<todayKey()) return "missed";
+  return "upcoming";
+}
+function planProgress(plan){ const ts=planTasks(plan.id).filter(t=>!t.dropped); const d=ts.filter(t=>t.done).length; return {done:d, total:ts.length}; }
+function planCurrentDay(plan){ // first plan day with unfinished tasks
+  for(const d of plan.days){ const st=planDayStatus(plan,d.n); if(st!=="done" && st!=="empty") return d; } return null; }
+function shiftPlan(plan, from){ // move every unfinished task of this plan scheduled on/after `from` one day later
+  planTasks(plan.id).forEach(t=>{ if(!t.done && !t.dropped && t.date>=from) t.date=addDays(t.date,1); }); }
+
+/* ------------------------------------------------------------------
+   ROLLOVER: unfinished past tasks move forward and raise an alert
+------------------------------------------------------------------ */
+function rollover(){
+  const today=todayKey();
+  const stale=Object.values(S.tasks).filter(t=>!t.done && !t.dropped && t.date<today && (!t.planId || (planOf(t)||{}).active!==false));
+  if(!stale.length){ S.lastRollover=today; return; }
+  stale.forEach(t=>{
+    S.slipLog.push({date:t.date, taskId:t.id, text:t.text});
+    if(S.settings.autoCarry){
+      S.alerts.push({id:uid(), taskId:t.id, from:t.date, to:today});
+      t.date=today; t.carried=(t.carried||0)+1;
+    }
+  });
+  S.lastRollover=today; saveLocal();
+}
+
+/* ------------------------------------------------------------------
+   SCORING
+------------------------------------------------------------------ */
+function tasksOn(k){ return Object.values(S.tasks).filter(t=>t.date===k && !t.dropped && (!t.planId || (planOf(t)||{}).active!==false)); }
+function doneOn(k){ return Object.values(S.tasks).filter(t=>t.done && t.doneAt===k).length; }
+function slippedOn(k){ return S.slipLog.filter(s=>s.date===k).length; }
+function habitsDone(k){ const d=S.days[k]; if(!d) return 0; return S.habits.filter(h=>d.habits&&d.habits[h.id]).length; }
+function isLogged(k){ const d=S.days[k]; return !!(doneOn(k) || (d && (d.deepHours || d.test || habitsDone(k) || d.notes))); }
+function dayScore(k){
+  if(!isLogged(k)) return null;
+  const d=day(k), done=doneOn(k), slip=slippedOn(k), open=tasksOn(k).filter(t=>!t.done).length;
+  const taskFrac = (done+slip+open)===0 ? 1 : done/(done+slip+open);
+  const habFrac = S.habits.length ? habitsDone(k)/S.habits.length : 1;
+  const deepFrac = Math.min(1,(d.deepHours||0)/S.settings.deepTarget);
+  const testFrac = (d.test||0)/5;
+  return Math.round(100*(taskFrac*0.4 + deepFrac*0.25 + habFrac*0.2 + testFrac*0.15));
+}
+
+/* ------------------------------------------------------------------
+   SVG helpers
+------------------------------------------------------------------ */
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){ const e=document.createElementNS(NS,tag); for(const a in attrs) e.setAttribute(a,attrs[a]); if(parent) parent.appendChild(e); return e; }
+function ringSVG(svg,frac,color,size,stroke,center){
+  svg.innerHTML=""; svg.setAttribute("viewBox",`0 0 ${size} ${size}`);
+  const r=(size-stroke)/2, c=2*Math.PI*r, cx=size/2;
+  el("circle",{cx,cy:cx,r,fill:"none",stroke:"var(--track)","stroke-width":stroke},svg);
+  const f=Math.max(0,Math.min(1,frac));
+  if(f>0) el("circle",{cx,cy:cx,r,fill:"none",stroke:color,"stroke-width":stroke,"stroke-linecap":"round","stroke-dasharray":`${c*f} ${c}`,transform:`rotate(-90 ${cx} ${cx})`},svg);
+  if(center!==undefined){ const t=el("text",{x:cx,y:cx+5,"text-anchor":"middle",class:"center",fill:"var(--ink)"},svg); t.textContent=center; }
+}
+function mk(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!==undefined) e.textContent=text; return e; }
+
+/* ------------------------------------------------------------------
+   RENDER: TODAY
+------------------------------------------------------------------ */
+function renderToday(){
+  document.getElementById("dateInput").value=current;
+  const isToday=current===todayKey();
+  const d=day(), list=tasksOn(current);
+  const done=list.filter(t=>t.done).length, total=list.length;
+  const sc=dayScore(current);
+  ringSVG(document.getElementById("scoreRing"),(sc||0)/100, sc>=75?"var(--done)":sc>=50?"var(--forge)":"var(--miss)",132,12);
+  document.getElementById("scoreNum").textContent= sc===null?"–":sc;
+
+  let line, sub;
+  if(!total && !isLogged(current)){ line= isToday?"Nothing planned yet.":"Nothing logged for this day."; sub="Add a task below, or start a plan in the Plans tab."; }
+  else if(total && done===total){ line="Everything planned is done."; sub="That's a perfect day for tasks. Log your deep work and test, then rest."; }
+  else { line=`${done} of ${total} tasks done.`; const left=total-done;
+    sub = isToday ? `${plural(left,"task")} left. Anything unfinished moves to tomorrow automatically, so it can't get lost.` :
+                    `${plural(left,"task")} were still open on this day.`; }
+  document.getElementById("heroLine").textContent=line;
+  document.getElementById("heroSub").textContent=sub;
+
+  renderAlerts(isToday);
+
+  const R=[
+    {lbl:"Tasks", icon:"tasks", frac: total?done/total:0, color:"var(--done)", c:`${done}/${total}`, v:"done"},
+    {lbl:"Deep work", icon:"clock", frac:(d.deepHours||0)/S.settings.deepTarget, color:"var(--deep)", c:(d.deepHours||0)+"h", v:`of ${S.settings.deepTarget} h`},
+    {lbl:"Routine", icon:"routine", frac:S.habits.length?habitsDone(current)/S.habits.length:0, color:"var(--hab)", c:`${habitsDone(current)}/${S.habits.length}`, v:"items"},
+    {lbl:"Test", icon:"brain", frac:(d.test||0)/5, color:"var(--test)", c: d.test?`${d.test}/5`:"–", v:"closed-book"}
+  ];
+  const wrap=document.getElementById("rings"); wrap.innerHTML="";
+  R.forEach(r=>{ const div=mk("div","ring"); const svg=el("svg",{class:"r",role:"img","aria-label":`${r.lbl}: ${r.c} ${r.v}`});
+    ringSVG(svg,r.frac,r.color,84,8,r.c); const ic=mk("span","ricon"); ic.innerHTML=ICONS[r.icon]; ic.setAttribute("aria-hidden","true");
+    div.append(svg,ic,mk("div","lbl",r.lbl),mk("div","val",r.v)); wrap.appendChild(div); });
+
+  renderPlanCard();
+
+  // tasks
+  const ul=document.getElementById("taskList"); ul.innerHTML="";
+  if(!list.length){ const li=mk("li"); li.style.gridTemplateColumns="1fr"; li.appendChild(mk("span","hint", isToday?"No tasks for today yet.":"No tasks were scheduled on this day.")); ul.appendChild(li); }
+  list.sort((a,b)=>(a.done-b.done)||((b.carried||0)-(a.carried||0)));
+  list.forEach(t=>{
+    const li=mk("li"); if(t.done) li.classList.add("done");
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=t.done; cb.setAttribute("aria-label","Done: "+t.text);
+    cb.onchange=()=>{ t.done=cb.checked; t.doneAt=cb.checked?current:null; save(); renderAll(); };
+    const tt=mk("div","tt"); tt.appendChild(mk("div","t",t.text));
+    const b=mk("div","badges");
+    const p=planOf(t); if(p) b.appendChild(mk("span","badge",`${p.name} · day ${t.n}`));
+    if(t.carried) b.appendChild(mk("span", t.carried>=2?"badge slip":"badge carry", t.carried>=2?`slipped ${t.carried}×`:`↻ from ${fmtDay(t.origDate)}`));
+    (t.tags||[]).slice(0,2).forEach(tag=>{ const s=mk("span","tag",tag); s.style.color=tagColor(tag); b.appendChild(s); });
+    tt.appendChild(b);
+    if(openMenu===t.id){ const m=mk("div","menu");
+      [["Tomorrow",()=>{ t.date=addDays(current,1); }],["+2 days",()=>{ t.date=addDays(current,2); }],
+       ["Edit",()=>{ const v=prompt("Edit task", t.text); if(v && v.trim()) t.text=v.trim(); }],
+       ["Drop",()=>{ if(confirm("Drop this task? It won't come back.")) t.dropped=true; }]
+      ].forEach(([lbl,fn])=>{ const bt=mk("button","",lbl); bt.onclick=()=>{ fn(); openMenu=null; save(); renderAll(); }; m.appendChild(bt); });
+      tt.appendChild(m); }
+    const more=mk("button","more","⋯"); more.setAttribute("aria-label","More actions"); more.onclick=()=>{ openMenu = openMenu===t.id?null:t.id; renderToday(); };
+    li.append(cb,tt,more); ul.appendChild(li);
+  });
+
+  // habits
+  const hl=document.getElementById("habitList"); hl.innerHTML="";
+  ["morning","afternoon","evening"].forEach(slot=>{ const hs=S.habits.filter(h=>h.slot===slot); if(!hs.length) return;
+    hl.appendChild(mk("div","slot",slot)); const ulh=mk("ul","tasks");
+    hs.forEach(h=>{ const li=mk("li"); li.style.gridTemplateColumns="auto 1fr"; const on=!!(d.habits&&d.habits[h.id]); if(on) li.classList.add("done");
+      const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=on; cb.setAttribute("aria-label",h.text);
+      cb.onchange=()=>{ d.habits={...(d.habits||{}),[h.id]:cb.checked}; save(); renderAll(); };
+      const tt=mk("div","tt"); tt.appendChild(mk("div","t",h.text)); li.append(cb,tt); ulh.appendChild(li); });
+    hl.appendChild(ulh); });
+
+  setVal("deepHours", d.deepHours); setVal("concept", d.concept);
+  if(document.activeElement!==document.getElementById("notes")) document.getElementById("notes").value=d.notes||"";
+  renderScale("testScore","test"); renderScale("energy","energy"); renderScale("focusScale","focus");
+}
+function setVal(id,v){ const e=document.getElementById(id); if(document.activeElement===e) return; e.value=(v===null||v===undefined)?"":v; }
+function renderScale(id,key){ const box=document.getElementById(id); box.innerHTML=""; const d=day();
+  for(let i=1;i<=5;i++){ const b=mk("button","",String(i)); b.setAttribute("aria-pressed",String(d[key]===i));
+    b.onclick=()=>{ d[key]= d[key]===i?0:i; save(); renderAll(); }; box.appendChild(b); } }
+
+function renderAlerts(isToday){
+  const box=document.getElementById("alerts"); box.innerHTML="";
+  if(!isToday) return;
+  const live=S.alerts.filter(a=>{ const t=S.tasks[a.taskId]; return t && !t.done && !t.dropped && t.date===todayKey(); });
+  S.alerts = live;  // drop stale alerts
+  if(S.settings.autoCarry && live.length){
+    const div=mk("div","alert"); const h=mk("h3"); const ic=mk("span"); ic.innerHTML=ICONS.carry; ic.style.display="inline-flex";
+    h.append(ic, document.createTextNode(`${plural(live.length,"unfinished task")} moved to today`)); div.appendChild(h);
+    const names = live.slice(0,4).map(a=>`“${S.tasks[a.taskId].text}” (from ${fmtDay(a.from)})`).join(", ");
+    div.appendChild(mk("p","", names + (live.length>4?` and ${live.length-4} more`:"") + ". Today now holds more than planned — shift your plan so later days don't pile up."));
+    const row=mk("div","row");
+    const planIds=[...new Set(live.map(a=>S.tasks[a.taskId].planId).filter(Boolean))];
+    planIds.forEach(pid=>{ const p=S.plans.find(x=>x.id===pid); if(!p) return;
+      const b=mk("button","btn small",`Shift “${p.name}” by a day`);
+      b.onclick=()=>{ planTasks(p.id).forEach(t=>{ if(!t.done && !t.dropped && t.date>todayKey()) t.date=addDays(t.date,1); });
+        S.alerts=[]; save(); renderAll(); }; row.appendChild(b); });
+    const ok=mk("button","btn ghost small","Keep everything on today"); ok.onclick=()=>{ S.alerts=[]; save(); renderAll(); }; row.appendChild(ok);
+    div.appendChild(row); box.appendChild(div);
+  }
+  if(!S.settings.autoCarry){
+    const overdue=Object.values(S.tasks).filter(t=>!t.done && !t.dropped && t.date<todayKey());
+    if(overdue.length){ const div=mk("div","alert miss"); const h=mk("h3"); const ic=mk("span"); ic.innerHTML=ICONS.warn; ic.style.display="inline-flex";
+      h.append(ic, document.createTextNode(`${plural(overdue.length,"task")} missed`)); div.appendChild(h);
+      div.appendChild(mk("p","", overdue.slice(0,4).map(t=>`“${t.text}” (${fmtDay(t.date)})`).join(", ")));
+      const row=mk("div","row"); const b=mk("button","btn small","Move all to today");
+      b.onclick=()=>{ overdue.forEach(t=>{ t.date=todayKey(); t.carried=(t.carried||0)+1; }); save(); renderAll(); }; row.appendChild(b);
+      div.appendChild(row); box.appendChild(div); }
+  }
+}
+
+function renderPlanCard(){
+  const box=document.getElementById("planCard"); box.innerHTML="";
+  const plans=activePlans(); if(!plans.length) return;
+  plans.forEach(p=>{ const pr=planProgress(p), cd=planCurrentDay(p);
+    const card=mk("div","plancard"); const top=mk("div","top");
+    top.append(mk("h2","",p.name), mk("span","sub", cd?`Day ${cd.n} of ${p.days.length}: ${cd.title}`:"All days complete"));
+    card.appendChild(top);
+    const bar=mk("div","pbar"); const fill=mk("i"); fill.style.width=(pr.total?100*pr.done/pr.total:0)+"%"; bar.appendChild(fill); card.appendChild(bar);
+    card.appendChild(mk("span","sub",`${pr.done} of ${pr.total} tasks · ${Math.round(pr.total?100*pr.done/pr.total:0)}%`));
+    if(cd && cd.tags.length){ const tg=mk("div","tags"); cd.tags.forEach(t=>{ const s=mk("span","tag",t); s.style.color=tagColor(t); tg.appendChild(s); }); card.appendChild(tg); }
+    box.appendChild(card); });
+}
+
+/* ------------------------------------------------------------------
+   RENDER: PLANS
+------------------------------------------------------------------ */
+function renderPlans(){
+  const box=document.getElementById("planList"); box.innerHTML="";
+  if(!S.plans.length){ box.appendChild(mk("p","hint","No plans yet. Load the 18-day LegalSpy sprint below, or write your own.")); }
+  S.plans.forEach(p=>{
+    const pr=planProgress(p); const card=mk("div","plancard");
+    const top=mk("div","top"); top.append(mk("h2","",p.name), mk("span","sub",`${p.active?"Active":"Paused"} · started ${fmtDay(p.start)}`)); card.appendChild(top);
+    const bar=mk("div","pbar"); const fill=mk("i"); fill.style.width=(pr.total?100*pr.done/pr.total:0)+"%"; bar.appendChild(fill); card.appendChild(bar);
+    card.appendChild(mk("span","sub",`${pr.done} of ${pr.total} tasks done`));
+    const tl=mk("div","timeline");
+    p.days.forEach(dd=>{ const st=planDayStatus(p,dd.n); const ts=planTasks(p.id).filter(t=>t.n===dd.n && !t.dropped);
+      const dates=[...new Set(ts.filter(t=>!t.done).map(t=>t.date))].sort();
+      const b=mk("button","tday "+st); if(dates.includes(todayKey())) b.classList.add("today");
+      b.append(mk("b","",String(dd.n)), mk("span","",dd.title));
+      b.title = `${dd.title} — ${st}`;
+      b.onclick=()=>{ openPlanDay = (openPlanDay && openPlanDay.planId===p.id && openPlanDay.n===dd.n) ? null : {planId:p.id, n:dd.n}; renderPlans(); };
+      tl.appendChild(b); });
+    card.appendChild(tl);
+    if(openPlanDay && openPlanDay.planId===p.id){ const dd=p.days.find(x=>x.n===openPlanDay.n);
+      const dv=mk("div","dayview"); dv.appendChild(mk("b","",`Day ${dd.n}: ${dd.title}`));
+      const ul=mk("ul","tasks");
+      planTasks(p.id).filter(t=>t.n===dd.n && !t.dropped).forEach(t=>{ const li=mk("li"); li.style.gridTemplateColumns="auto 1fr";
+        const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=t.done;
+        cb.onchange=()=>{ t.done=cb.checked; t.doneAt=cb.checked?todayKey():null; save(); renderAll(); renderPlans(); };
+        const tt=mk("div","tt"); tt.appendChild(mk("div","t",t.text)); if(t.done) li.classList.add("done");
+        const when=mk("button","badge", t.done?`done ${fmtDay(t.doneAt)}`:`on ${fmtDay(t.date)} →`);
+        when.style.border="0"; when.style.cursor="pointer"; when.style.marginTop="4px";
+        when.onclick=()=>{ current = t.done ? t.doneAt : t.date; document.querySelector('nav.tabs button[data-tab="today"]').click(); };
+        tt.appendChild(when); li.append(cb,tt); ul.appendChild(li); });
+      dv.appendChild(ul); card.appendChild(dv); }
+    const row=mk("div","row"); row.style.marginTop="12px";
+    const tg=mk("button","btn ghost small", p.active?"Pause":"Resume"); tg.onclick=()=>{ p.active=!p.active; save(); renderAll(); renderPlans(); };
+    const sh=mk("button","btn ghost small","Shift unfinished days +1"); sh.onclick=()=>{ shiftPlan(p, todayKey()); save(); renderAll(); renderPlans(); };
+    const del=mk("button","btn warn small","Delete"); del.onclick=()=>{ if(!confirm(`Delete “${p.name}” and all its tasks?`)) return;
+      Object.keys(S.tasks).forEach(k=>{ if(S.tasks[k].planId===p.id) delete S.tasks[k]; }); S.plans=S.plans.filter(x=>x.id!==p.id); save(); renderAll(); renderPlans(); };
+    row.append(tg,sh,del); card.appendChild(row);
+    box.appendChild(card);
+  });
+}
+
+/* ------------------------------------------------------------------
+   RENDER: WEEK
+------------------------------------------------------------------ */
+function lastKeys(n,end){ end=end||todayKey(); const out=[]; for(let i=n-1;i>=0;i--) out.push(addDays(end,-i)); return out; }
+function dayLabel(k){ return keyToDate(k).toLocaleDateString("en-GB",{weekday:"short"}); }
+
+function barChart(host, keys, series, opts){
+  const W=640,H=220,L=40,R=opts.right?34:12,T=14,B=28;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":opts.label});
+  const max=Math.max(opts.target||0, ...keys.map((k,i)=>series.reduce((a,s)=>a+(s.values[i]||0),0)), opts.minMax||1)*1.15;
+  const y=v=>T+(H-T-B)*(1-v/max), bw=(W-L-R)/keys.length;
+  for(let g=0;g<=4;g++){ const v=max*g/4; el("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"var(--line)"},svg);
+    const t=el("text",{x:L-6,y:y(v)+4,"text-anchor":"end","font-size":13,fill:"var(--muted)"},svg); t.textContent=opts.fmt(v); }
+  keys.forEach((k,i)=>{ let base=0; const x=L+i*bw+bw*0.2, w=bw*0.6;
+    series.forEach(s=>{ const v=s.values[i]||0; if(v>0){ el("rect",{x,y:y(base+v),width:w,height:Math.max(1,y(base)-y(base+v)),rx:4,fill:s.color},svg); } base+=v; });
+    if(base>0){ const t=el("text",{x:x+w/2,y:y(base)-5,"text-anchor":"middle","font-size":13,fill:"var(--ink)"},svg); t.textContent=opts.fmt(base); }
+    const t=el("text",{x:L+i*bw+bw/2,y:H-8,"text-anchor":"middle","font-size":13,fill:k===todayKey()?"var(--ink)":"var(--muted)","font-weight":k===todayKey()?700:400},svg); t.textContent=dayLabel(k); });
+  if(opts.target) el("line",{x1:L,x2:W-R,y1:y(opts.target),y2:y(opts.target),stroke:"var(--ink)","stroke-dasharray":"5 4"},svg);
+  if(opts.line){ const y2=v=>T+(H-T-B)*(1-v/5.5); let d="";
+    keys.forEach((k,i)=>{ const v=opts.line[i]; if(v){ const px=L+i*bw+bw/2; d+=(d?" L":"M")+px+" "+y2(v); el("circle",{cx:px,cy:y2(v),r:4,fill:"var(--forge)"},svg); } });
+    if(d) el("path",{d,fill:"none",stroke:"var(--forge)","stroke-width":2.5},svg); }
+  host.innerHTML=""; host.appendChild(svg);
+}
+
+function renderWeek(){
+  const keys=lastKeys(7);
+  document.getElementById("weekTitle").textContent=`${fmtDay(keys[0])} – ${fmtDay(keys[6])}`;
+  const logged=keys.filter(isLogged);
+  document.getElementById("weekSub").textContent=`${logged.length} of 7 days logged.`;
+  barChart(document.getElementById("chTasks"), keys, [
+    {values:keys.map(doneOn), color:"var(--done)"}, {values:keys.map(slippedOn), color:"var(--miss)"}],
+    {label:"Tasks done and slipped per day", fmt:v=>String(Math.round(v)), minMax:4});
+  barChart(document.getElementById("chDeep"), keys, [{values:keys.map(k=>(S.days[k]&&S.days[k].deepHours)||0), color:"var(--deep)"}],
+    {label:"Deep work hours", target:S.settings.deepTarget, fmt:v=>(Math.round(v*10)/10)+""});
+  barChart(document.getElementById("chTest"), keys, [{values:keys.map(k=>(S.days[k]&&S.days[k].test)||0), color:"var(--test)"}],
+    {label:"Test score and focus", fmt:v=>(Math.round(v*10)/10)+"", minMax:5, line:keys.map(k=>(S.days[k]&&S.days[k].focus)||null)});
+
+  const tb=document.getElementById("habitGrid"); tb.innerHTML="";
+  const hr=mk("tr"); hr.appendChild(mk("th","",""));
+  keys.forEach(k=>hr.appendChild(mk("th","",dayLabel(k)))); tb.appendChild(hr);
+  S.habits.forEach(h=>{ const tr=mk("tr"); tr.appendChild(mk("td","",h.text));
+    keys.forEach(k=>{ const td=mk("td"); const on=S.days[k]&&S.days[k].habits&&S.days[k].habits[h.id];
+      const s=mk("span","dot"+(!isLogged(k)?"":on?" y":" n")); td.appendChild(s); tr.appendChild(td); }); tb.appendChild(tr); });
+
+  // insights (finished days only)
+  const judged=keys.filter(k=>k<todayKey() && isLogged(k));
+  const right=[], wrong=[];
+  if(!judged.length){ right.push("Insights appear once a full day is logged."); }
+  else{
+    const done=judged.reduce((a,k)=>a+doneOn(k),0), slip=judged.reduce((a,k)=>a+slippedOn(k),0);
+    (done>=slip*2 ? right : wrong).push(`${plural(done,"task")} finished, ${slip} slipped to a later day.`);
+    const deep=judged.map(k=>(S.days[k].deepHours)||0); const avg=deep.reduce((a,b)=>a+b,0)/judged.length;
+    (avg>=S.settings.deepTarget*0.85 ? right : wrong).push(`Average deep work ${avg.toFixed(1)} h a day (target ${S.settings.deepTarget}).`);
+    const tests=judged.filter(k=>S.days[k].test); const solid=tests.filter(k=>S.days[k].test>=4).length;
+    if(tests.length) (solid>=Math.ceil(tests.length*0.6) ? right : wrong).push(`Closed-book tests: ${solid} of ${tests.length} scored 4 or 5.`);
+    else wrong.push("No closed-book tests logged — that's the step that makes concepts stick.");
+    const perfect=judged.filter(k=>tasksOn(k).every(t=>t.done) && doneOn(k)>0 && slippedOn(k)===0).length;
+    if(perfect) right.push(`${plural(perfect,"perfect day")}: everything scheduled got done.`);
+    S.habits.forEach(h=>{ const n=judged.filter(k=>S.days[k].habits&&S.days[k].habits[h.id]).length;
+      if(n===judged.length && n>=3) right.push(`${h.text}: every day.`);
+      else if(n<judged.length*0.6) wrong.push(`${h.text}: only ${n} of ${plural(judged.length,"day")}.`); });
+    const slippers=Object.values(S.tasks).filter(t=>!t.done && !t.dropped && (t.carried||0)>=2);
+    slippers.slice(0,3).forEach(t=>wrong.push(`“${t.text}” has slipped ${t.carried} times — split it into smaller steps or give it a fixed time slot.`));
+    const lowFocus=judged.filter(k=>S.days[k].focus && S.days[k].focus<=2).length;
+    if(lowFocus>=2) wrong.push(`Focus was low (1–2) on ${lowFocus} days — check sleep and whether tasks were too big.`);
+  }
+  fill("rightList", right.length?right:["Nothing yet."]); fill("wrongList", wrong.length?wrong:["Nothing flagged — keep the rhythm."]);
+}
+function fill(id,items){ const ul=document.getElementById(id); ul.innerHTML=""; items.forEach(t=>ul.appendChild(mk("li","",t))); }
+
+/* ------------------------------------------------------------------
+   RENDER: PROGRESS
+------------------------------------------------------------------ */
+function renderProgress(){
+  const all=Object.values(S.tasks).filter(t=>!t.dropped); const done=all.filter(t=>t.done);
+  const keys=Object.keys(S.days).filter(isLogged).sort();
+  const perfect=keys.filter(k=>k<todayKey() && tasksOn(k).every(t=>t.done) && doneOn(k)>0 && slippedOn(k)===0).length;
+  let streak=0; for(let k=todayKey(); ; k=addDays(k,-1)){ if(isLogged(k)) streak++; else if(k!==todayKey()) break; if(streak>400) break; }
+  document.getElementById("progTitle").textContent = done.length ? `${plural(done.length,"task")} forged.` : "Progress";
+  document.getElementById("progSub").textContent = `${S.slipLog.length} slips recorded across all plans — every one was carried forward, none lost.`;
+  const st=document.getElementById("stats"); st.innerHTML="";
+  [[String(done.length),"tasks done"],[String(perfect),"perfect days"],[String(streak),"day logging streak"],[`${all.length?Math.round(100*done.length/all.length):0}%`,"of all planned tasks"]]
+    .forEach(([b,s])=>{ const d=mk("div","stat"); d.append(mk("b","",b), mk("span","",s)); st.appendChild(d); });
+
+  // concepts
+  const counts={}; done.forEach(t=>(t.tags||[]).forEach(tag=>counts[tag]=(counts[tag]||0)+1));
+  const totals={}; all.forEach(t=>(t.tags||[]).forEach(tag=>totals[tag]=(totals[tag]||0)+1));
+  const tags=Object.keys(totals).sort((a,b)=>totals[b]-totals[a]);
+  const host=document.getElementById("chConcepts"); host.innerHTML="";
+  if(!tags.length){ host.appendChild(mk("p","hint","Tags appear once a plan exists.")); }
+  else{ const rowH=30, W=640, L=170, H=tags.length*rowH+10;
+    const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Concept coverage"});
+    tags.forEach((tag,i)=>{ const y=i*rowH+6, frac=(counts[tag]||0)/totals[tag];
+      const t=el("text",{x:L-10,y:y+15,"text-anchor":"end","font-size":14,fill:"var(--ink)"},svg); t.textContent=tag;
+      el("rect",{x:L,y,width:W-L-70,height:18,rx:9,fill:"var(--track)"},svg);
+      if(frac>0) el("rect",{x:L,y,width:(W-L-70)*frac,height:18,rx:9,fill:tagColor(tag)},svg);
+      const v=el("text",{x:W-62,y:y+15,"font-size":13,fill:"var(--muted)"},svg); v.textContent=`${counts[tag]||0}/${totals[tag]}`; });
+    host.appendChild(svg); }
+
+  // heatmap
+  const hh=document.getElementById("heat"); const today=keyToDate(todayKey()); const dow=(today.getDay()+6)%7;
+  const start=addDays(todayKey(), -(7*11+dow)); const cs=18,gap=4,LW=30;
+  const hs=el("svg",{viewBox:`0 0 ${LW+12*(cs+gap)} ${7*(cs+gap)+16}`,role:"img","aria-label":"Day scores for 12 weeks"});
+  ["Mon","","Wed","","Fri","","Sun"].forEach((l,i)=>{ if(l){ const t=el("text",{x:0,y:i*(cs+gap)+cs-4,"font-size":12,fill:"var(--muted)"},hs); t.textContent=l; } });
+  for(let c=0;c<12;c++) for(let r=0;r<7;r++){ const k=addDays(start,c*7+r); if(k>todayKey()) continue;
+    const sc=dayScore(k); const rect=el("rect",{x:LW+c*(cs+gap),y:r*(cs+gap),width:cs,height:cs,rx:4,
+      fill: sc===null?"none": sc>=75?"var(--done)": sc>=50?"var(--forge)":"var(--miss)", "fill-opacity": sc===null?0:0.35+0.65*sc/100, stroke: sc===null?"var(--line)":"none"},hs);
+    rect.style.cursor="pointer"; rect.addEventListener("click",()=>{ current=k; document.querySelector('nav.tabs button[data-tab="today"]').click(); });
+    const tt=el("title",{},rect); tt.textContent=`${k}: ${sc===null?"not logged":"score "+sc}`; }
+  hh.innerHTML=""; hh.appendChild(hs);
+}
+
+/* ------------------------------------------------------------------
+   RENDER: SETTINGS
+------------------------------------------------------------------ */
+function renderSettings(){
+  document.getElementById("setDeep").value=S.settings.deepTarget;
+  document.getElementById("setCarry").checked=!!S.settings.autoCarry;
+  const ed=document.getElementById("habitEditor"); ed.innerHTML="";
+  S.habits.forEach(h=>{ const row=mk("div","row"); row.style.margin="6px 0";
+    const sp=mk("span","",`${h.text}`); sp.style.flex="1 1 200px";
+    const sl=mk("span","badge",h.slot);
+    const del=mk("button","btn warn small","Remove"); del.onclick=()=>{ S.habits=S.habits.filter(x=>x.id!==h.id); save(); renderSettings(); renderAll(); };
+    row.append(sp,sl,del); ed.appendChild(row); });
+  const last=(()=>{ try{ return localStorage.getItem("forgelog.lastBackup"); }catch(e){ return null; } })();
+  document.getElementById("storageNote").textContent="Everything is saved only on this device, in this browser — nothing goes online. Clearing the browser's site data deletes it, so tap Back up all data once a week and keep the file. To move your log between phone and laptop, back up on one and restore on the other. " + (last?`Last backup: ${last}.`:"No backup made yet.");
+}
+
+function renderHeader(){
+  const ps=activePlans();
+  document.getElementById("planLine").textContent = ps.length ? ps.map(p=>{ const pr=planProgress(p); return `${p.name} ${pr.total?Math.round(100*pr.done/pr.total):0}%`; }).join(" · ") : "No active plan";
+}
+function renderAll(){ renderHeader(); renderToday();
+  if(!document.getElementById("tab-week").hidden) renderWeek();
+  if(!document.getElementById("tab-progress").hidden) renderProgress();
+  saveLocal(); }
+
+/* ------------------------------------------------------------------
+   EVENTS
+------------------------------------------------------------------ */
+function downloadFile(name,text,type){ const blob=new Blob([text],{type}); const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); }
+
+function bind(){
+  document.querySelectorAll("section.block h2[data-icon]").forEach(h=>{ const i=mk("span","hi"); i.innerHTML=ICONS[h.dataset.icon]||""; i.setAttribute("aria-hidden","true"); h.prepend(i); });
+  document.getElementById("addTask").onclick=()=>{ const i=document.getElementById("newTask"); const v=i.value.trim(); if(!v){ i.focus(); return; }
+    const id=uid(); S.tasks[id]={id,text:v,planId:null,n:null,tags:[],date:current,origDate:current,done:false,doneAt:null,dropped:false,carried:0};
+    i.value=""; save(); renderAll(); };
+  document.getElementById("newTask").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("addTask").click(); });
+  document.getElementById("deepHours").addEventListener("input",e=>{ day().deepHours=num(e.target.value); save(); renderToday(); renderHeader(); });
+  document.getElementById("concept").addEventListener("input",e=>{ day().concept=e.target.value; save(); });
+  document.getElementById("notes").addEventListener("input",e=>{ day().notes=e.target.value; save(); });
+
+  document.getElementById("dateInput").onchange=e=>{ if(e.target.value){ current=e.target.value; openMenu=null; renderAll(); } };
+  document.getElementById("prevDay").onclick=()=>{ current=addDays(current,-1); openMenu=null; renderAll(); };
+  document.getElementById("nextDay").onclick=()=>{ current=addDays(current,1); openMenu=null; renderAll(); };
+  document.getElementById("todayBtn").onclick=()=>{ current=todayKey(); openMenu=null; renderAll(); };
+
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{
+    document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));
+    ["today","plans","week","progress","settings"].forEach(t=>document.getElementById("tab-"+t).hidden = t!==b.dataset.tab);
+    if(b.dataset.tab==="today") renderToday();
+    if(b.dataset.tab==="plans") renderPlans();
+    if(b.dataset.tab==="week") renderWeek();
+    if(b.dataset.tab==="progress") renderProgress();
+    if(b.dataset.tab==="settings") renderSettings();
+    window.scrollTo(0,0); });
+
+  document.getElementById("pStart").value=todayKey();
+  document.getElementById("loadTemplate").onclick=()=>{ document.getElementById("pName").value="LegalSpy sprint"; document.getElementById("pText").value=SPRINT_TEMPLATE; };
+  document.getElementById("createPlan").onclick=()=>{
+    const name=document.getElementById("pName").value.trim(), start=document.getElementById("pStart").value||todayKey(), text=document.getElementById("pText").value;
+    const p=createPlan(name,start,text);
+    if(!p){ alert('No tasks found. Write "## Day title | tags" lines, each followed by "- task" lines.'); return; }
+    document.getElementById("pName").value=""; document.getElementById("pText").value="";
+    save(); renderAll(); renderPlans(); };
+
+  document.getElementById("saveSettings").onclick=()=>{ S.settings.deepTarget=num(document.getElementById("setDeep").value)||7;
+    S.settings.autoCarry=document.getElementById("setCarry").checked; save(); renderAll();
+    const b=document.getElementById("saveSettings"); b.textContent="Saved"; setTimeout(()=>b.textContent="Save settings",1400); };
+  document.getElementById("addHabit").onclick=()=>{ const t=document.getElementById("newHabit").value.trim(); if(!t) return;
+    S.habits.push({id:uid(), text:t, slot:document.getElementById("newHabitSlot").value}); document.getElementById("newHabit").value=""; save(); renderSettings(); renderAll(); };
+
+  document.getElementById("themeBtn").onclick=()=>{ const r=document.documentElement;
+    const dark= r.dataset.theme ? r.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    r.dataset.theme= dark?"light":"dark"; try{ localStorage.setItem("forgelog.theme", r.dataset.theme); }catch(e){} };
+  document.getElementById("backupBtn").onclick=()=>{ downloadFile(`forge-log-backup-${todayKey()}.json`, JSON.stringify({app:"forgelog",version:1,exported:new Date().toISOString(),state:S},null,1),"application/json");
+    try{ localStorage.setItem("forgelog.lastBackup", new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})); }catch(e){} renderSettings(); };
+  document.getElementById("restoreFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+    rd.onload=()=>{ try{ const o=JSON.parse(rd.result); if(o.app!=="forgelog"||!o.state){ alert("That file isn't a Forge Log backup."); return; }
+        if(!confirm("Replace everything on this device with this backup?")) return;
+        S={...freshState(), ...o.state, settings:{...freshState().settings, ...(o.state.settings||{})}}; save(); renderAll(); renderSettings(); alert("Backup restored.");
+      }catch(err){ alert("Couldn't read that file."); } e.target.value=""; };
+    rd.readAsText(f); };
+  document.getElementById("exportCsv").onclick=()=>{
+    const rows=[["task","plan","plan_day","tags","scheduled","original_date","done","done_on","times_slipped","dropped"]];
+    Object.values(S.tasks).forEach(t=>{ const p=planOf(t); rows.push([t.text,p?p.name:"",t.n||"",(t.tags||[]).join("; "),t.date,t.origDate,t.done?1:0,t.doneAt||"",t.carried||0,t.dropped?1:0]); });
+    const csv=rows.map(r=>r.map(c=>/[",\n;]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(",")).join("\n");
+    downloadFile(`forge-log-${todayKey()}.csv`, csv, "text/csv"); };
+
+  // re-run rollover when the app comes back after midnight
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.lastRollover!==todayKey()){ rollover(); current=todayKey(); renderAll(); } });
+}
+
+/* ------------------------------------------------------------------
+   START
+------------------------------------------------------------------ */
+try{ const t=localStorage.getItem("forgelog.theme"); if(t) document.documentElement.dataset.theme=t; }catch(e){}
+loadLocal();
+rollover();
+bind();
+renderAll();
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
