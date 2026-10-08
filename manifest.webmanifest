@@ -1,15 +1,27 @@
 {
-  "name": "Forge Log",
-  "short_name": "Forge Log",
-  "description": "Plan, build, test and ship — unfinished tasks carry forward. Data stays on this device.",
+  "name": "Mehnat Log — محنت لاگ",
+  "short_name": "Mehnat Log",
+  "description": "Daily work, study and routine tracker — plans, tasks, daily blocks and deep work. Data stays on this device.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#EEF0F4",
   "theme_color": "#18202B",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
-    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ]
 }

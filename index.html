@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Forge Log — build, test, ship</title>
+<title>Mehnat Log — محنت لاگ</title>
 <meta name="theme-color" content="#18202B">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Forge Log">
+<meta name="apple-mobile-web-app-title" content="Mehnat Log">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -19,19 +19,19 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
   --bg:#EEF0F4; --surface:#F8F9FB; --ink:#18202B; --muted:#5D6573; --line:#D4D8E0; --track:#DCE0E8; --plate:#E3E7EE;
-  --forge:#D9801C; --done:#2F8A5B; --miss:#C2453A; --carry:#3A73C4; --deep:#6C4FC4; --test:#178A8A; --hab:#D9801C;
+  --forge:#D9801C; --done:#2F8A5B; --miss:#C2453A; --carry:#3A73C4; --deep:#6C4FC4; --test:#178A8A; --hab:#D9801C; --blk:#C2478A;
   --focus:#3A73C4;
   --font:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#10141B; --surface:#171D26; --ink:#E5E9F0; --muted:#97A0AE; --line:#29313D; --track:#252D39; --plate:#202836;
-    --forge:#F0A341; --done:#4DB37E; --miss:#E57364; --carry:#6B9BE0; --deep:#9A82E6; --test:#3DB6B6; --hab:#F0A341; --focus:#6B9BE0;
+    --forge:#F0A341; --done:#4DB37E; --miss:#E57364; --carry:#6B9BE0; --deep:#9A82E6; --test:#3DB6B6; --hab:#F0A341; --focus:#6B9BE0; --blk:#EC86B9;
   }
 }
 :root[data-theme="dark"]{
   --bg:#10141B; --surface:#171D26; --ink:#E5E9F0; --muted:#97A0AE; --line:#29313D; --track:#252D39; --plate:#202836;
-  --forge:#F0A341; --done:#4DB37E; --miss:#E57364; --carry:#6B9BE0; --deep:#9A82E6; --test:#3DB6B6; --hab:#F0A341; --focus:#6B9BE0;
+  --forge:#F0A341; --done:#4DB37E; --miss:#E57364; --carry:#6B9BE0; --deep:#9A82E6; --test:#3DB6B6; --hab:#F0A341; --focus:#6B9BE0; --blk:#EC86B9;
 }
 *,*::before,*::after{box-sizing:inherit}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
@@ -165,7 +165,8 @@ ul.sched li{display:grid;grid-template-columns:62px auto minmax(0,1fr) auto;gap:
 ul.sched li.schedhead{display:block;border-bottom:0;padding:0}
 ul.sched .tm{font-size:.78rem;color:var(--muted);line-height:1.25;padding-top:3px;font-variant-numeric:tabular-nums}
 ul.sched .tm b{display:block;color:var(--ink);font-size:.9rem}
-ul.sched li.anchor .t{color:var(--muted)}
+ul.sched li.anchor .t .bic{display:inline-block;width:1.4em;opacity:.8}
+.ring .lbl{max-width:9ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 ul.sched li.anchor .dotic{width:24px;height:24px;border-radius:8px;background:var(--plate);display:grid;place-items:center;font-size:.8rem}
 ul.sched li.now{background:color-mix(in srgb, var(--forge) 12%, transparent);border-radius:12px;padding-left:6px;padding-right:6px;border-bottom-color:transparent}
 ul.sched li.past .tm b{color:var(--miss)}
@@ -190,7 +191,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
 <body>
 <header class="top">
   <div class="bar">
-    <div class="brand"><svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#18202B"/><path d="M120 300h272l-30 52H150z" fill="#F0A341"/><rect x="190" y="352" width="132" height="34" rx="8" fill="#F0A341"/><path d="M150 300c0-66 50-120 106-120h70l-26 52h-44c-34 0-58 30-58 68z" fill="#E5E9F0"/><path d="M300 136l16 34 36 6-26 24 6 36-32-18-32 18 6-36-26-24 36-6z" fill="#F0A341"/></svg><div class="txt">Forge Log<small><span id="planLine">No active plan</span> · <span id="syncNote">Saved on this device</span></small></div></div>
+    <div class="brand"><svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#18202B"/><path d="M120 300h272l-30 52H150z" fill="#F0A341"/><rect x="190" y="352" width="132" height="34" rx="8" fill="#F0A341"/><path d="M150 300c0-66 50-120 106-120h70l-26 52h-44c-34 0-58 30-58 68z" fill="#E5E9F0"/><path d="M300 136l16 34 36 6-26 24 6 36-32-18-32 18 6-36-26-24 36-6z" fill="#F0A341"/></svg><div class="txt">Mehnat Log<small><span id="planLine">No active plan</span> · <span id="syncNote">Saved on this device</span></small></div></div>
     <div class="datebox">
       <button class="iconbtn" id="prevDay" aria-label="Previous day">‹</button>
       <input type="date" id="dateInput" aria-label="Day">
@@ -312,7 +313,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
   <label class="switch" style="margin:14px 0"><input type="checkbox" id="setCarry"> Move unfinished tasks to today automatically</label>
   <section class="block">
     <h2>Fixed daily blocks</h2>
-    <p class="hint">Meals, gym, sleep — they repeat every day and frame your schedule. Change any time.</p>
+    <p class="hint">Meals, gym, sleep — they repeat every day and frame your schedule. Tick each one on Today when it's done; they have their own ring. Change any time.</p>
     <div id="anchorEditor"></div>
     <div class="row" style="margin-top:10px">
       <input id="newAnchor" placeholder="e.g. Namaz, commute, family time" style="flex:1 1 200px" aria-label="New fixed block">
@@ -696,13 +697,15 @@ function rollover(){
 function tasksOn(k){ return Object.values(S.tasks).filter(t=>t.date===k && !t.dropped && (!t.planId || (planOf(t)||{}).active!==false)); }
 function doneOn(k){ return Object.values(S.tasks).filter(t=>t.done && t.doneAt===k).length; }
 function slippedOn(k){ return S.slipLog.filter(s=>s.date===k).length; }
+function blocksDone(k){ const d=S.days[k]; if(!d||!d.blocks) return 0; return (S.anchors||[]).filter(a=>d.blocks[a.id]).length; }
 function habitsDone(k){ const d=S.days[k]; if(!d) return 0; return S.habits.filter(h=>d.habits&&d.habits[h.id]).length; }
-function isLogged(k){ const d=S.days[k]; return !!(doneOn(k) || (d && (d.deepHours || d.test || habitsDone(k) || d.notes))); }
+function isLogged(k){ const d=S.days[k]; return !!(doneOn(k) || (d && (d.deepHours || d.test || habitsDone(k) || blocksDone(k) || d.notes))); }
 function dayScore(k){
   if(!isLogged(k)) return null;
   const d=day(k), done=doneOn(k), slip=slippedOn(k), open=tasksOn(k).filter(t=>!t.done).length;
   const taskFrac = (done+slip+open)===0 ? 1 : done/(done+slip+open);
-  const habFrac = S.habits.length ? habitsDone(k)/S.habits.length : 1;
+  const nRoutine = S.habits.length + (S.anchors||[]).length;
+  const habFrac = nRoutine ? (habitsDone(k)+blocksDone(k))/nRoutine : 1;
   const deepFrac = Math.min(1,(d.deepHours||0)/S.settings.deepTarget);
   const testFrac = (d.test||0)/5;
   return Math.round(100*(taskFrac*0.4 + deepFrac*0.25 + habFrac*0.2 + testFrac*0.15));
@@ -747,12 +750,19 @@ function renderToday(){
   renderAlerts(isToday);
   renderNowCard();
 
-  const R=[
-    {lbl:"Tasks", icon:"tasks", frac: total?done/total:0, color:"var(--done)", c:`${done}/${total}`, v:"done"},
+  const R=[];
+  const PLAN_COLORS=["var(--carry)","var(--done)","var(--miss)","var(--deep)"];
+  activePlans().forEach((p,i)=>{ const ts=list.filter(t=>t.planId===p.id); if(!ts.length) return; const dn=ts.filter(t=>t.done).length;
+    R.push({lbl:p.name, icon:"tasks", frac:dn/ts.length, color:PLAN_COLORS[i%PLAN_COLORS.length], c:`${dn}/${ts.length}`, v:"plan tasks"}); });
+  const mine=list.filter(t=>!t.planId); if(mine.length){ const dn=mine.filter(t=>t.done).length;
+    R.push({lbl:"My tasks", icon:"tasks", frac:dn/mine.length, color:"var(--done)", c:`${dn}/${mine.length}`, v:"done"}); }
+  if(!R.length) R.push({lbl:"Tasks", icon:"tasks", frac:0, color:"var(--done)", c:"0/0", v:"done"});
+  const nb=(S.anchors||[]).length; if(nb) R.push({lbl:"Daily blocks", icon:"routine", frac:blocksDone(current)/nb, color:"var(--blk)", c:`${blocksDone(current)}/${nb}`, v:"meals, gym, sleep"});
+  R.push(
     {lbl:"Deep work", icon:"clock", frac:(d.deepHours||0)/S.settings.deepTarget, color:"var(--deep)", c:(d.deepHours||0)+"h", v:`of ${S.settings.deepTarget} h`},
     {lbl:"Routine", icon:"routine", frac:S.habits.length?habitsDone(current)/S.habits.length:0, color:"var(--hab)", c:`${habitsDone(current)}/${S.habits.length}`, v:"items"},
     {lbl:"Test", icon:"brain", frac:(d.test||0)/5, color:"var(--test)", c: d.test?`${d.test}/5`:"–", v:"closed-book"}
-  ];
+  );
   const wrap=document.getElementById("rings"); wrap.innerHTML="";
   R.forEach(r=>{ const div=mk("div","ring"); const svg=el("svg",{class:"r",role:"img","aria-label":`${r.lbl}: ${r.c} ${r.v}`});
     ringSVG(svg,r.frac,r.color,84,8,r.c); const ic=mk("span","ricon"); ic.innerHTML=ICONS[r.icon]; ic.setAttribute("aria-hidden","true");
@@ -914,6 +924,9 @@ function renderWeek(){
   S.habits.forEach(h=>{ const tr=mk("tr"); tr.appendChild(mk("td","",h.text));
     keys.forEach(k=>{ const td=mk("td"); const on=S.days[k]&&S.days[k].habits&&S.days[k].habits[h.id];
       const s=mk("span","dot"+(!isLogged(k)?"":on?" y":" n")); td.appendChild(s); tr.appendChild(td); }); tb.appendChild(tr); });
+  (S.anchors||[]).slice().sort((a,b)=>toMin(a.start)-toMin(b.start)).forEach(a=>{ const tr=mk("tr"); tr.appendChild(mk("td","",(ANCHOR_ICON[a.icon]||"•")+" "+a.text));
+    keys.forEach(k=>{ const td=mk("td"); const on=S.days[k]&&S.days[k].blocks&&S.days[k].blocks[a.id];
+      td.appendChild(mk("span","dot"+(!isLogged(k)?"":on?" y":" n"))); tr.appendChild(td); }); tb.appendChild(tr); });
 
   // insights (finished days only)
   const judged=keys.filter(k=>k<todayKey() && isLogged(k));
@@ -949,7 +962,7 @@ function renderProgress(){
   const keys=Object.keys(S.days).filter(isLogged).sort();
   const perfect=keys.filter(k=>k<todayKey() && tasksOn(k).every(t=>t.done) && doneOn(k)>0 && slippedOn(k)===0).length;
   let streak=0; for(let k=todayKey(); ; k=addDays(k,-1)){ if(isLogged(k)) streak++; else if(k!==todayKey()) break; if(streak>400) break; }
-  document.getElementById("progTitle").textContent = done.length ? `${plural(done.length,"task")} forged.` : "Progress";
+  document.getElementById("progTitle").textContent = done.length ? `${plural(done.length,"task")} done.` : "Progress";
   document.getElementById("progSub").textContent = `${S.slipLog.length} slips recorded across all plans — every one was carried forward, none lost.`;
   const st=document.getElementById("stats"); st.innerHTML="";
   [[String(done.length),"tasks done"],[String(perfect),"perfect days"],[String(streak),"day logging streak"],[`${all.length?Math.round(100*done.length/all.length):0}%`,"of all planned tasks"]]
@@ -1038,7 +1051,7 @@ function scheduleFor(k){
   tasksOn(k).forEach(t=>{ if(t.start) items.push({kind:"task", id:t.id, text:t.text, start:t.start, end:t.end, done:t.done, ref:t}); });
   const dd=S.days[k]||{};
   S.habits.forEach(h=>{ if(h.start) items.push({kind:"habit", id:h.id, text:h.text, start:h.start, end:h.end||h.start, done:!!(dd.habits&&dd.habits[h.id]), ref:h}); });
-  (S.anchors||[]).forEach(a=>items.push({kind:"anchor", id:a.id, text:a.text, start:a.start, end:a.end, icon:a.icon}));
+  (S.anchors||[]).forEach(a=>items.push({kind:"anchor", id:a.id, text:a.text, start:a.start, end:a.end, icon:a.icon, done:!!(dd.blocks&&dd.blocks[a.id])}));
   items.forEach(it=>{ const sh=lateShift(k,toMin(it.start)); it.s=toMin(it.start)+sh; it.e=toMin(it.end)+sh; if(it.e<=it.s) it.e=it.s+15; });
   return items.sort((a,b)=>a.s-b.s || (a.kind==="anchor")-(b.kind==="anchor"));
 }
@@ -1085,8 +1098,10 @@ function renderSchedule(list){
     let mid;
     if(it.kind==="habit"){ mid=document.createElement("input"); mid.type="checkbox"; mid.className="check"; mid.checked=it.done; mid.setAttribute("aria-label",it.text);
       mid.onchange=()=>{ const d=day(); d.habits={...(d.habits||{}),[it.id]:mid.checked}; save(); renderAll(); }; }
-    else { mid=mk("span","dotic", ANCHOR_ICON[it.icon]||"•"); }
-    const tt=mk("div","tt"); tt.appendChild(mk("div","t",it.text)); if(it.kind==="habit"){ const bb=mk("div","badges"); bb.appendChild(mk("span","badge","routine")); tt.appendChild(bb); }
+    else { mid=document.createElement("input"); mid.type="checkbox"; mid.className="check"; mid.checked=it.done; mid.setAttribute("aria-label",it.text);
+      mid.onchange=()=>{ const d=day(); d.blocks={...(d.blocks||{}),[it.id]:mid.checked}; save(); renderAll(); }; }
+    const tt=mk("div","tt"); const tline=mk("div","t"); if(it.kind==="anchor") tline.appendChild(mk("span","bic",ANCHOR_ICON[it.icon]||"•")); tline.appendChild(document.createTextNode(it.text)); tt.appendChild(tline);
+    { const bb=mk("div","badges"); bb.appendChild(mk("span","badge",it.kind==="habit"?"routine":"daily block")); tt.appendChild(bb); }
     li.append(tm,mid,tt,mk("span","")); ul.appendChild(li);
   });
   if(anytime.length){ ul.appendChild(mk("li","schedhead","Anytime today")); anytime.forEach(t=>ul.appendChild(taskRow(t,null))); }
@@ -1279,12 +1294,12 @@ function bind(){
     r.dataset.theme= dark?"light":"dark"; try{ localStorage.setItem("forgelog.theme", r.dataset.theme); }catch(e){} };
   document.getElementById("shareBtn").onclick=()=>{
     const json=JSON.stringify({app:"forgelog",version:1,exported:new Date().toISOString(),state:S},null,1);
-    shareBackup(`forge-log-backup-${todayKey()}.json`, json, "Forge Log", document.getElementById("shareBtn"), ()=>{
+    shareBackup(`mehnat-log-backup-${todayKey()}.json`, json, "Mehnat Log", document.getElementById("shareBtn"), ()=>{
       try{ localStorage.setItem("forgelog.lastBackup", new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})); }catch(e){} renderSettings(); }); };
-  document.getElementById("backupBtn").onclick=()=>{ downloadFile(`forge-log-backup-${todayKey()}.json`, JSON.stringify({app:"forgelog",version:1,exported:new Date().toISOString(),state:S},null,1),"application/json");
+  document.getElementById("backupBtn").onclick=()=>{ downloadFile(`mehnat-log-backup-${todayKey()}.json`, JSON.stringify({app:"forgelog",version:1,exported:new Date().toISOString(),state:S},null,1),"application/json");
     try{ localStorage.setItem("forgelog.lastBackup", new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})); }catch(e){} renderSettings(); };
   document.getElementById("restoreFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
-    rd.onload=()=>{ try{ const o=JSON.parse(rd.result); if(o.app!=="forgelog"||!o.state){ alert("That file isn't a Forge Log backup."); return; }
+    rd.onload=()=>{ try{ const o=JSON.parse(rd.result); if(o.app!=="forgelog"||!o.state){ alert("That file isn't a Mehnat Log (Mehnat Log) backup."); return; }
         if(!confirm("Replace everything on this device with this backup?")) return;
         S={...freshState(), ...o.state, settings:{...freshState().settings, ...(o.state.settings||{})}}; save(); renderAll(); renderSettings(); alert("Backup restored.");
       }catch(err){ alert("Couldn't read that file."); } e.target.value=""; };
@@ -1293,7 +1308,7 @@ function bind(){
     const rows=[["task","plan","plan_day","tags","scheduled","original_date","done","done_on","times_slipped","dropped"]];
     Object.values(S.tasks).forEach(t=>{ const p=planOf(t); rows.push([t.text,p?p.name:"",t.n||"",(t.tags||[]).join("; "),t.date,t.origDate,t.done?1:0,t.doneAt||"",t.carried||0,t.dropped?1:0]); });
     const csv=rows.map(r=>r.map(c=>/[",\n;]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(",")).join("\n");
-    downloadFile(`forge-log-${todayKey()}.csv`, csv, "text/csv"); };
+    downloadFile(`mehnat-log-${todayKey()}.csv`, csv, "text/csv"); };
 
   // re-run rollover when the app comes back after midnight
   document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.lastRollover!==todayKey()){ rollover(); current=todayKey(); renderAll(); } });

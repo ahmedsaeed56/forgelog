@@ -1,8 +1,8 @@
-// Offline app shell for Forge Log. Caches only the app files — your log data
+// Offline app shell for Mehnat Log. Caches only the app files — your log data
 // lives in this browser's local storage and is never sent anywhere.
 // The page itself is network-first: with internet you always get the newest
 // version; without internet the saved copy opens.
-const CACHE = "forgelog-v5";
+const CACHE = "forgelog-v6";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
