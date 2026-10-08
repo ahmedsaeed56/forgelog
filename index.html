@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sehat Log — صحت لاگ</title>
-<meta name="theme-color" content="#1C2733">
+<meta name="theme-color" content="#16784A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sehat Log">
 <link rel="manifest" href="manifest.webmanifest">
@@ -430,7 +430,18 @@ textarea{min-height:76px;resize:vertical}
 <body>
 <header class="top">
   <div class="bar">
-    <div class="brand"><svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#1C2733"/><circle cx="256" cy="256" r="150" fill="none" stroke="#2F4152" stroke-width="44"/><circle cx="256" cy="256" r="150" fill="none" stroke="#4DB37E" stroke-width="44" stroke-linecap="round" stroke-dasharray="660 943" transform="rotate(-90 256 256)"/><circle cx="256" cy="256" r="84" fill="none" stroke="#E6AE3E" stroke-width="30" stroke-linecap="round" stroke-dasharray="380 528" transform="rotate(-90 256 256)"/></svg><div class="txt">Sehat Log<small><span id="goalLine">114 kg → goal</span> · <span id="syncNote"></span></small></div></div>
+    <div class="brand"><svg class="logo" viewBox="0 0 512 512" aria-hidden="true">
+  <defs>
+    <linearGradient id="logobg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3FBF7F"/>
+      <stop offset="1" stop-color="#16784A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#logobg)"/>
+  <path d="M256 404 C 236 388 112 306 112 210 C 112 158 152 122 198 122 C 226 122 246 136 256 156 C 266 136 286 122 314 122 C 360 122 400 158 400 210 C 400 306 276 388 256 404 Z" fill="#FFFFFF"/>
+  <polyline points="128,248 196,248 220,206 250,300 280,226 300,262 384,262" fill="none" stroke="#16784A" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="384" cy="262" r="17" fill="#F2B544"/>
+</svg><div class="txt">Sehat Log<small><span id="goalLine">114 kg → goal</span> · <span id="syncNote"></span></small></div></div>
     <div class="datebox">
       <button class="iconbtn" id="prevDay" aria-label="Previous day">‹</button>
       <input type="date" id="dateInput" aria-label="Day">
