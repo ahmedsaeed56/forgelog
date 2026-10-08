@@ -165,6 +165,7 @@ ul.sched li{display:grid;grid-template-columns:62px auto minmax(0,1fr) auto;gap:
 ul.sched li.schedhead{display:block;border-bottom:0;padding:0}
 ul.sched .tm{font-size:.78rem;color:var(--muted);line-height:1.25;padding-top:3px;font-variant-numeric:tabular-nums}
 ul.sched .tm b{display:block;color:var(--ink);font-size:.9rem}
+.plancard ul.plantasks{margin-top:8px}
 ul.sched li.anchor .t .bic{display:inline-block;width:1.4em;opacity:.8}
 .ring .lbl{max-width:9ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 ul.sched li.anchor .dotic{width:24px;height:24px;border-radius:8px;background:var(--plate);display:grid;place-items:center;font-size:.8rem}
@@ -628,7 +629,8 @@ function plural(n,w){ return `${n} ${w}${n===1?"":"s"}`; }
 function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
 function loadLocal(){ try{ const raw=localStorage.getItem(LS_KEY); if(!raw) return;
   const o=JSON.parse(raw); S={...freshState(), ...o, settings:{...freshState().settings, ...(o.settings||{})}};
-  if(!Array.isArray(S.anchors)) S.anchors=DEFAULT_ANCHORS.map(a=>({...a})); }catch(e){} }
+  if(!Array.isArray(S.anchors)) S.anchors=DEFAULT_ANCHORS.map(a=>({...a}));
+  Object.values(S.tasks||{}).forEach(t=>{ if(t.done && t.doneAt && t.date!==t.doneAt){ t.schedDate=t.schedDate||t.date; t.date=t.doneAt; } }); }catch(e){} }
 let savedTimer=null;
 function save(){ saveLocal(); const n=document.getElementById("syncNote"); n.textContent="Saved on this device ✓";
   clearTimeout(savedTimer); savedTimer=setTimeout(()=>n.textContent="Saved on this device",1500); }
@@ -654,6 +656,10 @@ function createPlan(name, start, text){
   days.forEach((d,i)=>{ const date=addDays(start,i);
     d.tasks.forEach(t=>{ const id=uid(); S.tasks[id]={id, text:t.text, start:t.start||null, end:t.end||null, planId:plan.id, n:i+1, tags:d.tags, date, origDate:date, done:false, doneAt:null, dropped:false, carried:0}; }); });
   S.plans.push(plan); return plan;
+}
+function setDone(t, on, k){
+  if(on){ if(!t.done) t.schedDate = t.date; t.done=true; t.doneAt=k; t.date=k; }
+  else { t.done=false; t.doneAt=null; if(t.schedDate){ t.date = t.schedDate<todayKey() ? todayKey() : t.schedDate; delete t.schedDate; } }
 }
 function planTasks(pid){ return Object.values(S.tasks).filter(t=>t.planId===pid); }
 function planOf(t){ return t.planId ? S.plans.find(p=>p.id===t.planId) : null; }
@@ -832,6 +838,20 @@ function renderPlanCard(){
     const bar=mk("div","pbar"); const fill=mk("i"); fill.style.width=(pr.total?100*pr.done/pr.total:0)+"%"; bar.appendChild(fill); card.appendChild(bar);
     card.appendChild(mk("span","sub",`${pr.done} of ${pr.total} tasks · ${Math.round(pr.total?100*pr.done/pr.total:0)}%`));
     if(cd && cd.tags.length){ const tg=mk("div","tags"); cd.tags.forEach(t=>{ const s=mk("span","tag",t); s.style.color=tagColor(t); tg.appendChild(s); }); card.appendChild(tg); }
+    if(cd && current===todayKey()){
+      const here=planTasks(p.id).filter(t=>t.n===cd.n && !t.dropped && !t.done && t.date!==current);
+      if(here.length){
+        const sched=here[0].date, ahead=sched>current;
+        card.appendChild(mk("p","hint", ahead ? `Day ${cd.n} is planned for ${fmtDay(sched)} — start early by ticking what you finish; it counts for today.`
+                                              : `Day ${cd.n} tasks — tick what you finish; it counts for today.`));
+        const ul=mk("ul","tasks plantasks");
+        here.forEach(t=>{ const li=mk("li"); li.style.gridTemplateColumns="auto 1fr";
+          const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.setAttribute("aria-label","Done: "+t.text);
+          cb.onchange=()=>{ setDone(t, cb.checked, current); save(); renderAll(); };
+          const tt=mk("div","tt"); tt.appendChild(mk("div","t",t.text)); li.append(cb,tt); ul.appendChild(li); });
+        card.appendChild(ul);
+      }
+    }
     box.appendChild(card); });
 }
 
@@ -860,7 +880,7 @@ function renderPlans(){
       const ul=mk("ul","tasks");
       planTasks(p.id).filter(t=>t.n===dd.n && !t.dropped).forEach(t=>{ const li=mk("li"); li.style.gridTemplateColumns="auto 1fr";
         const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=t.done;
-        cb.onchange=()=>{ t.done=cb.checked; t.doneAt=cb.checked?todayKey():null; save(); renderAll(); renderPlans(); };
+        cb.onchange=()=>{ setDone(t, cb.checked, todayKey()); save(); renderAll(); renderPlans(); };
         const tt=mk("div","tt"); tt.appendChild(mk("div","t",t.text)); if(t.done) li.classList.add("done");
         const when=mk("button","badge", t.done?`done ${fmtDay(t.doneAt)}`:`on ${fmtDay(t.date)} →`);
         when.style.border="0"; when.style.cursor="pointer"; when.style.marginTop="4px";
@@ -1067,7 +1087,7 @@ function renderSchedule(list){
     const li=mk("li"); if(t.done) li.classList.add("done");
     const tm=mk("div","tm"); if(timeLabel){ tm.appendChild(mk("b","",timeLabel[0])); tm.appendChild(document.createTextNode(timeLabel[1])); } else tm.textContent="—";
     const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=t.done; cb.setAttribute("aria-label","Done: "+t.text);
-    cb.onchange=()=>{ t.done=cb.checked; t.doneAt=cb.checked?current:null; save(); renderAll(); };
+    cb.onchange=()=>{ setDone(t, cb.checked, current); save(); renderAll(); };
     const tt=mk("div","tt"); tt.appendChild(mk("div","t",t.text));
     const b=mk("div","badges"); const p=planOf(t); if(p && !timeLabel) b.appendChild(mk("span","badge",`${p.name} · day ${t.n}`));
     if(t.carried) b.appendChild(mk("span", t.carried>=2?"badge slip":"badge carry", t.carried>=2?`slipped ${t.carried}×`:`↻ from ${fmtDay(t.origDate)}`));
@@ -1152,7 +1172,7 @@ function renderNowCard(){
     const row=mk("div","row");
     if(cur.kind!=="anchor"){
       const f=mk("button","btn small",`Start focus · ${Math.min(90,left)} min`); f.onclick=()=>startTimer(Math.min(90,left), cur.text); row.appendChild(f);
-      if(!cur.done){ const dn=mk("button","btn ghost small","Mark done"); dn.onclick=()=>{ if(cur.kind==="task"){ cur.ref.done=true; cur.ref.doneAt=current; } else { const d=day(); d.habits={...(d.habits||{}),[cur.id]:true}; } save(); renderAll(); }; row.appendChild(dn); }
+      if(!cur.done){ const dn=mk("button","btn ghost small","Mark done"); dn.onclick=()=>{ if(cur.kind==="task"){ setDone(cur.ref, true, current); } else if(cur.kind==="anchor"){ const d=day(); d.blocks={...(d.blocks||{}),[cur.id]:true}; } else { const d=day(); d.habits={...(d.habits||{}),[cur.id]:true}; } save(); renderAll(); }; row.appendChild(dn); }
     }
     card.appendChild(row);
   } else {
