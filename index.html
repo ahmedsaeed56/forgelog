@@ -159,6 +159,28 @@ textarea{min-height:80px;resize:vertical}
 .tday.missed{border-color:var(--miss);background:color-mix(in srgb, var(--miss) 10%, var(--surface))}
 .tday.today{box-shadow:0 0 0 2px var(--ink) inset}
 .planlist{display:grid;gap:12px}
+/* schedule */
+ul.sched{list-style:none;margin:0;padding:0}
+ul.sched li{display:grid;grid-template-columns:62px auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px dashed var(--line)}
+ul.sched li.schedhead{display:block;border-bottom:0;padding:0}
+ul.sched .tm{font-size:.78rem;color:var(--muted);line-height:1.25;padding-top:3px;font-variant-numeric:tabular-nums}
+ul.sched .tm b{display:block;color:var(--ink);font-size:.9rem}
+ul.sched li.anchor .t{color:var(--muted)}
+ul.sched li.anchor .dotic{width:24px;height:24px;border-radius:8px;background:var(--plate);display:grid;place-items:center;font-size:.8rem}
+ul.sched li.now{background:color-mix(in srgb, var(--forge) 12%, transparent);border-radius:12px;padding-left:6px;padding-right:6px;border-bottom-color:transparent}
+ul.sched li.past .tm b{color:var(--miss)}
+ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
+.schedhead{font-size:.76rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
+.nowcard{border:1px solid var(--forge);background:color-mix(in srgb, var(--forge) 9%, var(--surface));border-radius:18px;padding:12px 14px;margin:12px 0 4px}
+.nowcard .lbl{font-size:.76rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--forge)}
+.nowcard h3{margin:2px 0 4px;font-size:1.05rem;line-height:1.3}
+.nowcard .meta{color:var(--muted);font-size:.85rem}
+.nowcard .pbar{margin:8px 0}
+.nowcard .next{font-size:.85rem;color:var(--muted);margin-top:6px}
+.timer{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.editrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.editrow input[type=text]{flex:1 1 180px}
+.editrow input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px}
 .dayview{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:12px;background:var(--surface)}
 .banner{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-top:12px}
 .switch{display:flex;align-items:center;gap:10px;cursor:pointer}
@@ -194,14 +216,15 @@ textarea{min-height:80px;resize:vertical}
     <div><h1 id="heroLine">Plan your day.</h1><p id="heroSub"></p></div>
   </div>
   <div id="alerts"></div>
+  <div id="nowCard"></div>
   <div class="rings" id="rings"></div>
   <div id="planCard"></div>
 
   <div class="cols">
     <div>
       <section class="block">
-        <h2 data-icon="hammer">Tasks</h2>
-        <p class="hint">Tick what you actually finished. Unfinished tasks move forward automatically — nothing gets lost.</p>
+        <h2 data-icon="hammer">Today's schedule</h2>
+        <p class="hint">Every task at its exact time. Tick what you actually finished — anything unfinished moves to tomorrow automatically.</p>
         <ul class="tasks" id="taskList"></ul>
         <div class="row" style="margin-top:12px">
           <input id="newTask" placeholder="Add a task for this day" style="flex:1 1 200px" aria-label="New task">
@@ -209,7 +232,7 @@ textarea{min-height:80px;resize:vertical}
         </div>
       </section>
       <section class="block">
-        <h2 data-icon="routine">Daily routine</h2>
+        <h2 data-icon="routine">Routine without a time</h2>
         <div id="habitList"></div>
       </section>
     </div>
@@ -288,17 +311,29 @@ textarea{min-height:80px;resize:vertical}
   </div>
   <label class="switch" style="margin:14px 0"><input type="checkbox" id="setCarry"> Move unfinished tasks to today automatically</label>
   <section class="block">
+    <h2>Fixed daily blocks</h2>
+    <p class="hint">Meals, gym, sleep — they repeat every day and frame your schedule. Change any time.</p>
+    <div id="anchorEditor"></div>
+    <div class="row" style="margin-top:10px">
+      <input id="newAnchor" placeholder="e.g. Namaz, commute, family time" style="flex:1 1 200px" aria-label="New fixed block">
+      <input id="newAnchorStart" type="time" value="12:00" aria-label="Start"><input id="newAnchorEnd" type="time" value="12:30" aria-label="End">
+      <button class="btn" id="addAnchor">Add</button>
+    </div>
+  </section>
+  <section class="block">
     <h2>Daily routine items</h2>
-    <p class="hint">These appear every day, grouped by time of day.</p>
+    <p class="hint">These appear every day. Give them a time to put them in your schedule.</p>
     <div id="habitEditor"></div>
     <div class="row" style="margin-top:10px">
       <input id="newHabit" placeholder="New routine item" style="flex:1 1 220px" aria-label="New routine item">
       <select id="newHabitSlot" aria-label="Time of day"><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select>
+      <input id="newHabitStart" type="time" aria-label="Start (optional)"><input id="newHabitEnd" type="time" aria-label="End (optional)">
       <button class="btn" id="addHabit">Add</button>
     </div>
   </section>
   <div class="row" style="margin-top:18px">
     <button class="btn" id="saveSettings">Save settings</button>
+    <button class="btn ghost" id="timedRoutine">Use the timed routine</button>
     <button class="btn" id="shareBtn">Send to phone / laptop</button>
     <button class="btn ghost" id="backupBtn">Back up all data</button>
     <label class="btn ghost" for="restoreFile">Restore from backup</label>
@@ -340,85 +375,183 @@ function tagColor(tag){ let h=0; for(const c of tag) h=(h*31+c.charCodeAt(0))>>>
    TEMPLATE: the 18-day LegalSpy sprint
 ------------------------------------------------------------------ */
 const SPRINT_TEMPLATE = `## Ingestion rebuild | RAG, Context engineering
-- Rebuild ingestion from memory: extraction → chunking → metadata (court, year, case no., doc_id) → embedding with "passage:" prefix → store
-- Compare with existing code and apply the fixes
-- Re-embed the library and check chunk counts
+- 08:15-09:00 Revise (old topic): Transformers and self-attention (Q, K, V, softmax) — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Chunking strategies and metadata design — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Rebuild ingestion from memory: extraction → chunking → metadata (court, year, case no., doc_id)
+- 14:15-15:45 Build: Embed with the “passage:” prefix → store; re-embed the library and check chunk counts
+- 15:45-16:45 Build: Compare with your old code and apply the fixes
+- 17:00-17:30 Closed-book test: explain chunking and embedding choices out loud, then solve one small problem without notes
+- 19:45-20:45 Interview practice: DSA: arrays & hashing — 2 problems
 
 ## Retrieval rebuild | RAG, Graph engineering, Harness engineering
-- "query:" prefix + metadata filters in dense and BM25
-- RRF fusion + reranker + synthesis
-- Rebuild the LangGraph flow and deploy
-- Wire LangSmith tracing
+- 08:15-09:00 Revise (old topic): Tokenization and embeddings — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Hybrid retrieval: BM25, RRF and rerankers — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: “query:” prefix + metadata filters in dense and BM25
+- 14:15-15:45 Build: RRF fusion + reranker + synthesis; rebuild the LangGraph flow
+- 15:45-16:45 Build: Deploy and wire LangSmith tracing
+- 17:00-17:30 Closed-book test: explain hybrid retrieval out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 1 Ingestion rebuild
+- 19:45-20:45 Interview practice: SQL: joins — 3 queries
 
 ## Evaluation | Evaluation, Harness engineering
-- Build the eval set: component, trajectory, end-to-end
-- LLM-as-judge for faithfulness
-- Run old vs new build → before/after table
+- 08:15-09:00 Revise (old topic): SFT: next-token loss, masking, chat templates — recall from memory first, then check your notes
+- 10:30-11:30 Learn: RAG evaluation: component, trajectory, end-to-end; LLM-as-judge — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Build the eval set: 30+ questions with expected sources
+- 14:15-15:45 Build: LLM-as-judge for faithfulness
+- 15:45-16:45 Build: Run old vs new build → before/after table
+- 17:00-17:30 Closed-book test: explain evaluation metrics out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 2 Retrieval rebuild
+- 19:45-20:45 Interview practice: DSA: two pointers — 2 problems
 
 ## Revision | Revision
-- Closed-book: explain days 1–3 out loud
-- Solve one fresh RAG problem without notes
-- Fix anything that broke
+- 08:15-09:00 Revise (old topic): LoRA and QLoRA — recall from memory first, then check your notes
+- 10:30-12:00 Blank-page recall: write everything you remember from days 1–3, then check
+- 12:00-13:30 Rebuild from memory: the hardest piece from days 1–3
+- 14:15-15:45 Fix what broke and fill the gaps the recall exposed
+- 15:45-16:45 One fresh problem without notes
+- 17:00-17:30 Closed-book test: days 1–3 out loud
+- 17:30-18:30 Spaced revision (recall first): Day 3 Evaluation · Day 1 Ingestion rebuild
+- 19:45-20:45 Interview practice: SQL: GROUP BY & HAVING — 3 queries
 
 ## Guardrails + decision models | Guardrails, Harness engineering, Context engineering, Graph engineering
-- Schema-enforced router + confidence gate (clarify edge)
-- Guardrail counters
-- Quote verification check
-- Jev vs Gemini judge experiment: accuracy, latency, cost
+- 08:15-09:00 Revise (old topic): RLHF: preferences and the reward model (Bradley–Terry) — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Structured outputs, confidence gates and decision models (Jev) — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Schema-enforced router + confidence gate (clarify edge)
+- 14:15-15:45 Build: Guardrail counters + quote verification check
+- 15:45-16:45 Build: Jev vs Gemini judge experiment: accuracy, latency, cost
+- 17:00-17:30 Closed-book test: explain guardrails and routing out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 4 Revision · Day 2 Retrieval rebuild
+- 19:45-20:45 Interview practice: DSA: sliding window — 2 problems
 
 ## Citation extraction | NLP
-- Regex + NER for citations inside judgment text
-- Measure extraction precision on 20 judgments
+- 08:15-09:00 Revise (old topic): PPO: advantage, clipping, KL penalty — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Regex + NER for legal citations — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Write citation patterns + an NER pass over judgments
+- 14:15-15:45 Build: Measure extraction precision on 20 judgments
+- 15:45-16:45 Build: Fix the misses; store citations per document
+- 17:00-17:30 Closed-book test: explain NER and regex out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 5 Guardrails + decision models · Day 3 Evaluation
+- 19:45-20:45 Interview practice: SQL: window functions — 3 queries
 
 ## GraphRAG part 1 | GraphRAG, Graph engineering
-- Design the graph schema: nodes and edges
-- Load citations into Neo4j and write first Cypher queries
+- 08:15-09:00 Revise (old topic): DPO: loss, β, reference model — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Graph data modelling and Cypher basics — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Design the graph schema: nodes and edges
+- 14:15-15:45 Build: Load citations into Neo4j
+- 15:45-16:45 Build: Write your first Cypher queries
+- 17:00-17:30 Closed-book test: explain graph schema and Cypher out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 6 Citation extraction · Day 4 Revision
+- 19:45-20:45 Interview practice: DSA: stack — 2 problems
 
 ## GraphRAG part 2 | GraphRAG, Context engineering
-- Multi-hop questions: "what cites this?", "is it still good law?"
-- Hybrid graph + vector retrieval with eval scores
+- 08:15-09:00 Revise (old topic): GRPO: group advantage, DAPO / Dr. GRPO fixes — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Multi-hop retrieval and hybrid graph + vector search — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Multi-hop questions: “what cites this?”, “is it still good law?”
+- 14:15-15:45 Build: Hybrid graph + vector retrieval
+- 15:45-16:45 Build: Add multi-hop questions to the eval set and score them
+- 17:00-17:30 Closed-book test: explain GraphRAG out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 7 GraphRAG part 1 · Day 5 Guardrails + decision models · Day 1 Ingestion rebuild
+- 19:45-20:45 Interview practice: SQL: CTEs and subqueries — 3 queries
 
 ## Revision | Revision
-- Closed-book: explain days 5–8 out loud
-- Redo the retrieval design from memory
+- 08:15-09:00 Revise (old topic): RAG basics: chunking, embeddings, vector search — recall from memory first, then check your notes
+- 10:30-12:00 Blank-page recall: write everything you remember from days 5–8, then check
+- 12:00-13:30 Rebuild from memory: the hardest piece from days 5–8
+- 14:15-15:45 Fix what broke and fill the gaps the recall exposed
+- 15:45-16:45 One fresh problem without notes
+- 17:00-17:30 Closed-book test: days 5–8 out loud
+- 17:30-18:30 Spaced revision (recall first): Day 8 GraphRAG part 2 · Day 6 Citation extraction · Day 2 Retrieval rebuild
+- 19:45-20:45 Interview practice: Mock: explain LegalSpy in 5 minutes (record yourself)
 
 ## Agentic RAG | Agentic RAG, Harness engineering, Graph engineering, Context engineering
-- Plan → retrieve → Jev-graded relevance → retry (cap 2)
-- Report cost and latency vs plain RAG
+- 08:15-09:00 Revise (old topic): Hybrid search: BM25 + RRF + reranker — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Agent loops: plan, retrieve, grade, retry (CRAG, Self-RAG) — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Plan → retrieve → Jev-graded relevance → retry (cap 2)
+- 14:15-15:45 Build: Wire the retry edge + counters
+- 15:45-16:45 Build: Report cost and latency vs plain RAG
+- 17:00-17:30 Closed-book test: explain agentic RAG out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 9 Revision · Day 7 GraphRAG part 1 · Day 3 Evaluation
+- 19:45-20:45 Interview practice: DSA: binary search — 2 problems
 
 ## MCP + CI | MCP, CI/CD, Harness engineering
-- MCP server exposing search and the citation graph
-- Run the eval set in GitHub Actions on every push
+- 08:15-09:00 Revise (old topic): LangGraph: state, nodes, conditional edges, checkpointer — recall from memory first, then check your notes
+- 10:30-11:30 Learn: MCP servers and GitHub Actions — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: MCP server exposing search and the citation graph
+- 14:15-15:45 Build: Connect to Claude Desktop and test it
+- 15:45-16:45 Build: Run the eval set in GitHub Actions on every push
+- 17:00-17:30 Closed-book test: explain MCP and CI out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 10 Agentic RAG · Day 8 GraphRAG part 2 · Day 4 Revision
+- 19:45-20:45 Interview practice: SQL: date functions — 3 queries
 
 ## Multi-agent | Multi-agent, Graph engineering
-- Researcher → drafter → verifier supervisor graph
-- Compare against the single agent; keep it only if better
+- 08:15-09:00 Revise (old topic): Evaluation: LLM-as-judge, faithfulness, hit@k — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Supervisor pattern and hand-offs — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Researcher → drafter → verifier supervisor graph
+- 14:15-15:45 Build: Run the eval set on single vs multi-agent
+- 15:45-16:45 Build: Keep it only if better — write up the comparison
+- 17:00-17:30 Closed-book test: explain multi-agent design out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 11 MCP + CI · Day 9 Revision · Day 5 Guardrails + decision models
+- 19:45-20:45 Interview practice: DSA: linked list — 2 problems
 
 ## Revision | Revision
-- Closed-book: explain days 10–12 out loud
-- Redo the graph schema from memory
+- 08:15-09:00 Revise (old topic): ML basics: bias–variance, regularisation, metrics — recall from memory first, then check your notes
+- 10:30-12:00 Blank-page recall: write everything you remember from days 10–12, then check
+- 12:00-13:30 Rebuild from memory: the hardest piece from days 10–12
+- 14:15-15:45 Fix what broke and fill the gaps the recall exposed
+- 15:45-16:45 One fresh problem without notes
+- 17:00-17:30 Closed-book test: days 10–12 out loud
+- 17:30-18:30 Spaced revision (recall first): Day 12 Multi-agent · Day 10 Agentic RAG · Day 6 Citation extraction
+- 19:45-20:45 Interview practice: Mock: system-design a RAG app in 20 minutes
 
 ## Synthetic data | Fine-tuning
-- Generate drafts from public judgments only
-- Filter with checker + Jev scores (rejection sampling)
-- Send draft pairs to the lawyer to pick
+- 08:15-09:00 Revise (old topic): Classical NLP: TF-IDF, NER, regex — recall from memory first, then check your notes
+- 10:30-11:30 Learn: Distillation, rejection sampling and preference data — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Generate drafts from public judgments only
+- 14:15-15:45 Build: Filter with the checker + Jev scores (rejection sampling)
+- 15:45-16:45 Build: Build draft pairs and send them to the lawyer to pick
+- 17:00-17:30 Closed-book test: explain synthetic data out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 13 Revision · Day 11 MCP + CI · Day 7 GraphRAG part 1
+- 19:45-20:45 Interview practice: DSA: trees, BFS/DFS — 2 problems
 
 ## SFT | Fine-tuning
-- QLoRA SFT on Colab with a 1–3B model
-- Compare against the base model on the eval set
+- 08:15-09:00 Revise (old topic): Statistics: p-values and A/B tests — recall from memory first, then check your notes
+- 10:30-11:30 Learn: QLoRA hyper-parameters and chat templates — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Prepare the SFT dataset (completion-only loss)
+- 14:15-15:45 Build: QLoRA SFT on Colab with a 1–3B model
+- 15:45-16:45 Build: Compare against the base model on the eval set
+- 17:00-17:30 Closed-book test: explain SFT and QLoRA out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 14 Synthetic data · Day 12 Multi-agent · Day 8 GraphRAG part 2
+- 19:45-20:45 Interview practice: DSA: heap / top-k — 2 problems
 
 ## DPO | RLHF
-- Build chosen/rejected pairs and train DPO
-- Blind A/B against the SFT model
+- 08:15-09:00 Revise (old topic): SQL: joins and window functions — recall from memory first, then check your notes
+- 10:30-11:30 Learn: DPO loss, β and the reference model in TRL — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Build chosen/rejected pairs
+- 14:15-15:45 Build: Train DPO on Colab
+- 15:45-16:45 Build: Blind A/B against the SFT model
+- 17:00-17:30 Closed-book test: explain DPO out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 15 SFT · Day 13 Revision · Day 9 Revision
+- 19:45-20:45 Interview practice: SQL: practice set — 5 mixed queries
 
 ## GRPO | RLHF
-- Citation checker as the reward; short GRPO run
-- Check the pass rate and look for reward hacking
+- 08:15-09:00 Revise (old topic): System design: a production RAG system — recall from memory first, then check your notes
+- 10:30-11:30 Learn: GRPO/DAPO with verifiable rewards — read, then write a one-page summary in your own words
+- 11:30-13:30 Build: Write the citation-checker reward function
+- 14:15-15:45 Build: Short GRPO run on Colab
+- 15:45-16:45 Build: Check the pass rate and look for reward hacking
+- 17:00-17:30 Closed-book test: explain GRPO out loud, then solve one small problem without notes
+- 17:30-18:30 Spaced revision (recall first): Day 16 DPO · Day 14 Synthetic data · Day 10 Agentic RAG
+- 19:45-20:45 Interview practice: DSA: recursion and DP basics — 2 problems
 
 ## Revision + case study | Revision
-- Closed-book: explain every concept out loud
-- README case study with every before/after table
-- Draft the LinkedIn post`;
+- 08:15-09:00 Revise (old topic): Prompt and context engineering — recall from memory first, then check your notes
+- 10:30-12:00 Blank-page recall: write everything you remember from days 1–17, then check
+- 12:00-13:30 Case study: README with every before/after table and the architecture diagram
+- 14:15-15:45 Case study: limitations, costs and what you'd do next
+- 15:45-16:45 Draft the LinkedIn post + record a 2-minute demo
+- 17:00-17:30 Closed-book test: explain the whole system out loud in 5 minutes
+- 17:30-18:30 Spaced revision (recall first): Day 17 GRPO · Day 15 SFT · Day 11 MCP + CI
+- 19:45-20:45 Interview practice: Mock interview: 30 minutes, self-recorded`;
 
 const CLIENT_TEMPLATE = `## Offer, niche and place | Client hunting
 - Write the 3 answers: what I sell, who I sell it to, where they are
@@ -453,11 +586,21 @@ const CLIENT_TEMPLATE = `## Offer, niche and place | Client hunting
 - Schedule it daily and track replies per 10 emails`;
 
 const DEFAULT_HABITS = [
-  {id:"h1", text:"Job keep-alive: reply to recruiters (15 min)", slot:"morning"},
-  {id:"h2", text:"Closed-book test of today's concept", slot:"afternoon"},
-  {id:"h3", text:"Revise older concepts (1, 3 and 7 days ago)", slot:"evening"},
-  {id:"h4", text:"Commit and push today's work", slot:"evening"},
-  {id:"h5", text:"Write tomorrow's first task", slot:"evening"}
+  {id:"h1", text:"Job keep-alive: reply to recruiters and messages", slot:"morning", start:"08:00", end:"08:15"},
+  {id:"h4", text:"Commit and push today's work", slot:"afternoon", start:"16:45", end:"17:00"},
+  {id:"h5", text:"Day review: log deep work, test score and notes; write tomorrow's first task", slot:"evening", start:"20:45", end:"21:15"}
+];
+// fixed blocks that repeat every day (meals, gym, sleep) — shown in the schedule, not counted as tasks
+const DEFAULT_ANCHORS = [
+  {id:"a1", text:"Wake up · water · log sleep in Sehat Log", start:"07:00", end:"07:30", icon:"sun"},
+  {id:"a2", text:"Breakfast", start:"07:30", end:"08:00", icon:"meal"},
+  {id:"a3", text:"Gym", start:"09:00", end:"10:15", icon:"gym"},
+  {id:"a4", text:"Shower and get ready", start:"10:15", end:"10:30", icon:"break"},
+  {id:"a5", text:"Lunch + 15-minute walk", start:"13:30", end:"14:15", icon:"meal"},
+  {id:"a6", text:"Walk, family, free time", start:"18:30", end:"19:00", icon:"break"},
+  {id:"a7", text:"Dinner", start:"19:00", end:"19:45", icon:"meal"},
+  {id:"a8", text:"Free time · wind down, no screens after 22:00", start:"21:15", end:"22:30", icon:"break"},
+  {id:"a9", text:"Sleep", start:"22:30", end:"23:59", icon:"moon"}
 ];
 
 /* ------------------------------------------------------------------
@@ -470,6 +613,7 @@ let openMenu = null;          // task id whose action menu is open
 let openPlanDay = null;       // {planId, n} expanded in Plans tab
 
 function freshState(){ return {settings:{deepTarget:7, autoCarry:true}, habits:DEFAULT_HABITS.map(h=>({...h})),
+  anchors:DEFAULT_ANCHORS.map(a=>({...a})), timer:null,
   plans:[], tasks:{}, days:{}, slipLog:[], alerts:[], lastRollover:null}; }
 function todayKey(d){ d=d||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function keyToDate(k){ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); }
@@ -482,7 +626,8 @@ function plural(n,w){ return `${n} ${w}${n===1?"":"s"}`; }
 
 function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
 function loadLocal(){ try{ const raw=localStorage.getItem(LS_KEY); if(!raw) return;
-  const o=JSON.parse(raw); S={...freshState(), ...o, settings:{...freshState().settings, ...(o.settings||{})}}; }catch(e){} }
+  const o=JSON.parse(raw); S={...freshState(), ...o, settings:{...freshState().settings, ...(o.settings||{})}};
+  if(!Array.isArray(S.anchors)) S.anchors=DEFAULT_ANCHORS.map(a=>({...a})); }catch(e){} }
 let savedTimer=null;
 function save(){ saveLocal(); const n=document.getElementById("syncNote"); n.textContent="Saved on this device ✓";
   clearTimeout(savedTimer); savedTimer=setTimeout(()=>n.textContent="Saved on this device",1500); }
@@ -496,7 +641,9 @@ function parsePlanText(text){
     const l=line.trim(); if(!l) return;
     if(l.startsWith("##")){ const body=l.replace(/^#+\s*/,""); const [title,tags]=body.split("|");
       cur={title:(title||"").trim()||`Day ${days.length+1}`, tags:(tags||"").split(",").map(t=>t.trim()).filter(Boolean), tasks:[]}; days.push(cur); }
-    else if(/^[-*•]/.test(l)){ if(!cur){ cur={title:"Day 1",tags:[],tasks:[]}; days.push(cur); } cur.tasks.push(l.replace(/^[-*•]\s*/,"")); }
+    else if(/^[-*•]/.test(l)){ if(!cur){ cur={title:"Day 1",tags:[],tasks:[]}; days.push(cur); }
+      const body=l.replace(/^[-*•]\s*/,""); const m=body.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.*)$/);
+      cur.tasks.push(m ? {text:m[3], start:pad5(m[1]), end:pad5(m[2])} : {text:body}); }
   });
   return days.filter(d=>d.tasks.length);
 }
@@ -504,7 +651,7 @@ function createPlan(name, start, text){
   const days=parsePlanText(text); if(!days.length) return null;
   const plan={id:uid(), name:name||"Untitled plan", start, active:true, days:days.map((d,i)=>({n:i+1, title:d.title, tags:d.tags}))};
   days.forEach((d,i)=>{ const date=addDays(start,i);
-    d.tasks.forEach(t=>{ const id=uid(); S.tasks[id]={id, text:t, planId:plan.id, n:i+1, tags:d.tags, date, origDate:date, done:false, doneAt:null, dropped:false, carried:0}; }); });
+    d.tasks.forEach(t=>{ const id=uid(); S.tasks[id]={id, text:t.text, start:t.start||null, end:t.end||null, planId:plan.id, n:i+1, tags:d.tags, date, origDate:date, done:false, doneAt:null, dropped:false, carried:0}; }); });
   S.plans.push(plan); return plan;
 }
 function planTasks(pid){ return Object.values(S.tasks).filter(t=>t.planId===pid); }
@@ -537,6 +684,7 @@ function rollover(){
     if(S.settings.autoCarry){
       S.alerts.push({id:uid(), taskId:t.id, from:t.date, to:today});
       t.date=today; t.carried=(t.carried||0)+1;
+      if(t.start){ t.origStart=t.start; t.origEnd=t.end; t.start=null; t.end=null; }
     }
   });
   S.lastRollover=today; saveLocal();
@@ -597,6 +745,7 @@ function renderToday(){
   document.getElementById("heroSub").textContent=sub;
 
   renderAlerts(isToday);
+  renderNowCard();
 
   const R=[
     {lbl:"Tasks", icon:"tasks", frac: total?done/total:0, color:"var(--done)", c:`${done}/${total}`, v:"done"},
@@ -611,33 +760,12 @@ function renderToday(){
 
   renderPlanCard();
 
-  // tasks
-  const ul=document.getElementById("taskList"); ul.innerHTML="";
-  if(!list.length){ const li=mk("li"); li.style.gridTemplateColumns="1fr"; li.appendChild(mk("span","hint", isToday?"No tasks for today yet.":"No tasks were scheduled on this day.")); ul.appendChild(li); }
-  list.sort((a,b)=>(a.done-b.done)||((b.carried||0)-(a.carried||0)));
-  list.forEach(t=>{
-    const li=mk("li"); if(t.done) li.classList.add("done");
-    const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=t.done; cb.setAttribute("aria-label","Done: "+t.text);
-    cb.onchange=()=>{ t.done=cb.checked; t.doneAt=cb.checked?current:null; save(); renderAll(); };
-    const tt=mk("div","tt"); tt.appendChild(mk("div","t",t.text));
-    const b=mk("div","badges");
-    const p=planOf(t); if(p) b.appendChild(mk("span","badge",`${p.name} · day ${t.n}`));
-    if(t.carried) b.appendChild(mk("span", t.carried>=2?"badge slip":"badge carry", t.carried>=2?`slipped ${t.carried}×`:`↻ from ${fmtDay(t.origDate)}`));
-    (t.tags||[]).slice(0,2).forEach(tag=>{ const s=mk("span","tag",tag); s.style.color=tagColor(tag); b.appendChild(s); });
-    tt.appendChild(b);
-    if(openMenu===t.id){ const m=mk("div","menu");
-      [["Tomorrow",()=>{ t.date=addDays(current,1); }],["+2 days",()=>{ t.date=addDays(current,2); }],
-       ["Edit",()=>{ const v=prompt("Edit task", t.text); if(v && v.trim()) t.text=v.trim(); }],
-       ["Drop",()=>{ if(confirm("Drop this task? It won't come back.")) t.dropped=true; }]
-      ].forEach(([lbl,fn])=>{ const bt=mk("button","",lbl); bt.onclick=()=>{ fn(); openMenu=null; save(); renderAll(); }; m.appendChild(bt); });
-      tt.appendChild(m); }
-    const more=mk("button","more","⋯"); more.setAttribute("aria-label","More actions"); more.onclick=()=>{ openMenu = openMenu===t.id?null:t.id; renderToday(); };
-    li.append(cb,tt,more); ul.appendChild(li);
-  });
+  renderSchedule(list);
 
   // habits
   const hl=document.getElementById("habitList"); hl.innerHTML="";
-  ["morning","afternoon","evening"].forEach(slot=>{ const hs=S.habits.filter(h=>h.slot===slot); if(!hs.length) return;
+  if(!S.habits.some(h=>!h.start)) hl.appendChild(mk("p","hint","All routine items have a time, so they're in your schedule above."));
+  ["morning","afternoon","evening"].forEach(slot=>{ const hs=S.habits.filter(h=>h.slot===slot && !h.start); if(!hs.length) return;
     hl.appendChild(mk("div","slot",slot)); const ulh=mk("ul","tasks");
     hs.forEach(h=>{ const li=mk("li"); li.style.gridTemplateColumns="auto 1fr"; const on=!!(d.habits&&d.habits[h.id]); if(on) li.classList.add("done");
       const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=on; cb.setAttribute("aria-label",h.text);
@@ -730,6 +858,10 @@ function renderPlans(){
         tt.appendChild(when); li.append(cb,tt); ul.appendChild(li); });
       dv.appendChild(ul); card.appendChild(dv); }
     const row=mk("div","row"); row.style.marginTop="12px";
+    if(p.days.length===18 && !planTasks(p.id).some(t=>t.start||t.origStart)){
+      const up=mk("button","btn small","Add exact timings"); up.title="Rebuild unfinished days with the timed sprint; finished days are kept";
+      up.onclick=()=>{ if(!confirm("Rebuild the unfinished days of this plan with exact timings? Finished days stay as they are.")) return; upgradePlanToTimed(p); save(); renderAll(); renderPlans(); };
+      row.appendChild(up); }
     const tg=mk("button","btn ghost small", p.active?"Pause":"Resume"); tg.onclick=()=>{ p.active=!p.active; save(); renderAll(); renderPlans(); };
     const sh=mk("button","btn ghost small","Shift unfinished days +1"); sh.onclick=()=>{ shiftPlan(p, todayKey()); save(); renderAll(); renderPlans(); };
     const del=mk("button","btn warn small","Delete"); del.onclick=()=>{ if(!confirm(`Delete “${p.name}” and all its tasks?`)) return;
@@ -891,6 +1023,159 @@ function yearCalendar(host, scoreOf, colors, onPick, earliestKey, rerender){
   host.append(nav, svg);
 }
 
+
+/* ------------------------------------------------------------------
+   EXACT-TIME SCHEDULE · NOW/NEXT · FOCUS TIMER · RUNNING LATE
+------------------------------------------------------------------ */
+function pad5(t){ const [h,m]=t.split(":"); return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
+function toMin(t){ if(!t) return null; const [h,m]=t.split(":").map(Number); return h*60+m; }
+function fromMin(x){ x=Math.max(0,Math.min(24*60-1,Math.round(x))); return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0"); }
+function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
+function fmt12(t){ if(!t) return ""; const [h,m]=t.split(":").map(Number); return `${((h+11)%12)+1}:${String(m).padStart(2,"0")}${h<12?"am":"pm"}`; }
+function lateShift(k, startMin){ const d=S.days[k]; if(!d||!d.late) return 0; return startMin>=d.late.from ? d.late.by : 0; }
+function scheduleFor(k){
+  const items=[];
+  tasksOn(k).forEach(t=>{ if(t.start) items.push({kind:"task", id:t.id, text:t.text, start:t.start, end:t.end, done:t.done, ref:t}); });
+  const dd=S.days[k]||{};
+  S.habits.forEach(h=>{ if(h.start) items.push({kind:"habit", id:h.id, text:h.text, start:h.start, end:h.end||h.start, done:!!(dd.habits&&dd.habits[h.id]), ref:h}); });
+  (S.anchors||[]).forEach(a=>items.push({kind:"anchor", id:a.id, text:a.text, start:a.start, end:a.end, icon:a.icon}));
+  items.forEach(it=>{ const sh=lateShift(k,toMin(it.start)); it.s=toMin(it.start)+sh; it.e=toMin(it.end)+sh; if(it.e<=it.s) it.e=it.s+15; });
+  return items.sort((a,b)=>a.s-b.s || (a.kind==="anchor")-(b.kind==="anchor"));
+}
+const ANCHOR_ICON={sun:"☀",meal:"🍽",gym:"🏋",break:"☕",moon:"☾"};
+
+function renderSchedule(list){
+  const ul=document.getElementById("taskList"); ul.innerHTML=""; ul.className="tasks sched";
+  const isToday=current===todayKey(), now=nowMin();
+  const items=scheduleFor(current);
+  const untimed=list.filter(t=>!t.start);
+  const carried=untimed.filter(t=>t.carried), anytime=untimed.filter(t=>!t.carried);
+  const taskRow=(t, timeLabel)=>{
+    const li=mk("li"); if(t.done) li.classList.add("done");
+    const tm=mk("div","tm"); if(timeLabel){ tm.appendChild(mk("b","",timeLabel[0])); tm.appendChild(document.createTextNode(timeLabel[1])); } else tm.textContent="—";
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.className="check"; cb.checked=t.done; cb.setAttribute("aria-label","Done: "+t.text);
+    cb.onchange=()=>{ t.done=cb.checked; t.doneAt=cb.checked?current:null; save(); renderAll(); };
+    const tt=mk("div","tt"); tt.appendChild(mk("div","t",t.text));
+    const b=mk("div","badges"); const p=planOf(t); if(p && !timeLabel) b.appendChild(mk("span","badge",`${p.name} · day ${t.n}`));
+    if(t.carried) b.appendChild(mk("span", t.carried>=2?"badge slip":"badge carry", t.carried>=2?`slipped ${t.carried}×`:`↻ from ${fmtDay(t.origDate)}`));
+    (t.tags||[]).slice(0, timeLabel?1:2).forEach(tag=>{ const s2=mk("span","tag",tag); s2.style.color=tagColor(tag); b.appendChild(s2); });
+    tt.appendChild(b);
+    if(openMenu===t.id){ const m=mk("div","menu");
+      [["Set time",()=>{ const v=prompt("Time for this task, like 10:30-11:30 (leave empty for no time)", t.start?`${t.start}-${t.end}`:(t.origStart?`${t.origStart}-${t.origEnd}`:""));
+          if(v===null) return; const mm=v.trim().match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})$/);
+          if(!v.trim()){ t.start=null; t.end=null; } else if(mm){ t.start=pad5(mm[1]); t.end=pad5(mm[2]); } else alert("Use the format 10:30-11:30"); }],
+       ["Tomorrow",()=>{ t.date=addDays(current,1); }],["+2 days",()=>{ t.date=addDays(current,2); }],
+       ["Edit",()=>{ const v=prompt("Edit task", t.text); if(v && v.trim()) t.text=v.trim(); }],
+       ["Drop",()=>{ if(confirm("Drop this task? It won't come back.")) t.dropped=true; }]
+      ].forEach(([lbl,fn])=>{ const bt=mk("button","",lbl); bt.onclick=()=>{ fn(); openMenu=null; save(); renderAll(); }; m.appendChild(bt); });
+      tt.appendChild(m); }
+    const more=mk("button","more","⋯"); more.setAttribute("aria-label","More actions"); more.onclick=()=>{ openMenu = openMenu===t.id?null:t.id; renderToday(); };
+    li.append(tm,cb,tt,more); return li;
+  };
+  if(carried.length){ ul.appendChild(mk("li","schedhead","Carried over — give these a time or do them first")); carried.forEach(t=>ul.appendChild(taskRow(t,null))); }
+  if(items.length) ul.appendChild(mk("li","schedhead","Schedule"));
+  items.forEach(it=>{
+    const label=[fromMin(it.s), "–"+fromMin(it.e)];
+    if(it.kind==="task"){ const li=taskRow(it.ref,label);
+      if(isToday && now>=it.s && now<it.e) li.classList.add("now"); else if(isToday && now>=it.e && !it.done) li.classList.add("past");
+      ul.appendChild(li); return; }
+    const li=mk("li"); li.classList.add(it.kind); if(it.done) li.classList.add("done");
+    if(isToday && now>=it.s && now<it.e) li.classList.add("now"); else if(isToday && it.kind==="habit" && now>=it.e && !it.done) li.classList.add("past");
+    const tm=mk("div","tm"); tm.appendChild(mk("b","",label[0])); tm.appendChild(document.createTextNode(label[1]));
+    let mid;
+    if(it.kind==="habit"){ mid=document.createElement("input"); mid.type="checkbox"; mid.className="check"; mid.checked=it.done; mid.setAttribute("aria-label",it.text);
+      mid.onchange=()=>{ const d=day(); d.habits={...(d.habits||{}),[it.id]:mid.checked}; save(); renderAll(); }; }
+    else { mid=mk("span","dotic", ANCHOR_ICON[it.icon]||"•"); }
+    const tt=mk("div","tt"); tt.appendChild(mk("div","t",it.text)); if(it.kind==="habit"){ const bb=mk("div","badges"); bb.appendChild(mk("span","badge","routine")); tt.appendChild(bb); }
+    li.append(tm,mid,tt,mk("span","")); ul.appendChild(li);
+  });
+  if(anytime.length){ ul.appendChild(mk("li","schedhead","Anytime today")); anytime.forEach(t=>ul.appendChild(taskRow(t,null))); }
+  if(!items.length && !untimed.length){ const li=mk("li"); li.style.gridTemplateColumns="1fr"; li.appendChild(mk("span","hint", isToday?"No tasks for today yet.":"No tasks were scheduled on this day.")); ul.appendChild(li); }
+}
+
+let timerTick=null;
+function timerLeft(){ const T=S.timer; if(!T) return 0; return Math.max(0, T.start + T.mins*60000 - Date.now()); }
+function stopTimer(finished){
+  const T=S.timer; if(!T) return;
+  const usedMin = finished ? T.mins : Math.round((Date.now()-T.start)/60000);
+  const d=day(T.day); d.deepHours = Math.round(((d.deepHours||0) + usedMin/60)*4)/4;
+  S.timer=null; clearInterval(timerTick); timerTick=null; save(); renderAll();
+  if(finished){ try{ navigator.vibrate && navigator.vibrate([300,150,300]); }catch(e){}
+    try{ const ac=new (window.AudioContext||window.webkitAudioContext)(); const o=ac.createOscillator(); const g=ac.createGain(); o.frequency.value=880; o.connect(g); g.connect(ac.destination); g.gain.setValueAtTime(0.2,ac.currentTime); o.start(); o.stop(ac.currentTime+0.6); }catch(e){}
+    setTimeout(()=>alert(`Focus block done — ${usedMin} minutes added to today's deep work. Take a 5–10 minute break.`),50); }
+}
+function startTimer(mins,label){ S.timer={start:Date.now(), mins:Math.max(5,Math.min(120,Math.round(mins))), label, day:todayKey()}; save(); renderAll(); }
+function ensureTick(){
+  if(S.timer && !timerTick){ timerTick=setInterval(()=>{ const el=document.getElementById("timerText");
+    const left=timerLeft(); if(el){ const m=Math.floor(left/60000), sec=Math.floor(left/1000)%60; el.textContent=`${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`; }
+    if(left<=0) stopTimer(true); }, 1000); }
+}
+
+function renderNowCard(){
+  const box=document.getElementById("nowCard"); if(!box) return; box.innerHTML="";
+  if(current!==todayKey()) return;
+  const items=scheduleFor(current); if(!items.length && !S.timer) return;
+  const now=nowMin(); const cur=items.find(it=>now>=it.s && now<it.e && it.kind!=="anchor") || items.find(it=>now>=it.s && now<it.e);
+  const nxt=items.find(it=>it.s>now);
+  const card=mk("div","nowcard");
+  if(S.timer){
+    card.appendChild(mk("div","lbl","Focus timer"));
+    card.appendChild(mk("h3","",S.timer.label||"Deep work"));
+    const t=mk("div","timer"); t.id="timerText"; t.textContent="--:--"; card.appendChild(t);
+    const row=mk("div","row"); const st=mk("button","btn small","Stop and log"); st.onclick=()=>stopTimer(false);
+    const cx=mk("button","btn ghost small","Cancel"); cx.onclick=()=>{ S.timer=null; clearInterval(timerTick); timerTick=null; save(); renderAll(); };
+    row.append(st,cx); card.appendChild(row);
+    card.appendChild(mk("p","hint","Phone away, one tab open. When it ends, the minutes go into today's deep work automatically."));
+    box.appendChild(card); ensureTick(); timerTick && document.getElementById("timerText") && (document.getElementById("timerText").textContent=(()=>{ const l=timerLeft(); return `${String(Math.floor(l/60000)).padStart(2,"0")}:${String(Math.floor(l/1000)%60).padStart(2,"0")}`; })());
+    return;
+  }
+  if(cur){
+    card.appendChild(mk("div","lbl", cur.kind==="anchor" ? "Now" : "Now — do this"));
+    card.appendChild(mk("h3","",cur.text));
+    const left=cur.e-now; card.appendChild(mk("div","meta",`${fromMin(cur.s)}–${fromMin(cur.e)} · ${left} min left`));
+    const bar=mk("div","pbar"); const fill=mk("i"); fill.style.width=Math.min(100,100*(now-cur.s)/(cur.e-cur.s))+"%"; bar.appendChild(fill); card.appendChild(bar);
+    const row=mk("div","row");
+    if(cur.kind!=="anchor"){
+      const f=mk("button","btn small",`Start focus · ${Math.min(90,left)} min`); f.onclick=()=>startTimer(Math.min(90,left), cur.text); row.appendChild(f);
+      if(!cur.done){ const dn=mk("button","btn ghost small","Mark done"); dn.onclick=()=>{ if(cur.kind==="task"){ cur.ref.done=true; cur.ref.doneAt=current; } else { const d=day(); d.habits={...(d.habits||{}),[cur.id]:true}; } save(); renderAll(); }; row.appendChild(dn); }
+    }
+    card.appendChild(row);
+  } else {
+    card.appendChild(mk("div","lbl","Free right now"));
+    card.appendChild(mk("h3","", nxt ? `Next at ${fromMin(nxt.s)}: ${nxt.text}` : "Today's schedule is finished — review, rest, sleep on time."));
+    const row=mk("div","row"); const f=mk("button","btn small","Start a 25-min focus"); f.onclick=()=>startTimer(25,"Focus block"); row.appendChild(f); card.appendChild(row);
+  }
+  if(cur && nxt) card.appendChild(mk("div","next",`Next at ${fromMin(nxt.s)}: ${nxt.text}`));
+  const late=mk("div","row"); late.style.marginTop="8px";
+  late.appendChild(mk("span","hint","Running late?"));
+  [15,30,60].forEach(mn=>{ const bt=mk("button","btn ghost small",`+${mn} min`); bt.onclick=()=>{ const d=day(); const from=(cur?cur.s:now);
+      d.late = d.late && d.late.from<=from ? {from:d.late.from, by:d.late.by+mn} : {from, by:(d.late?d.late.by:0)+mn}; save(); renderAll(); }; late.appendChild(bt); });
+  const dlate=S.days[current]&&S.days[current].late;
+  if(dlate && dlate.by){ const r=mk("button","btn ghost small","Reset times"); r.onclick=()=>{ delete day().late; save(); renderAll(); }; late.appendChild(r); }
+  card.appendChild(late);
+  box.appendChild(card);
+}
+
+function renderAnchorEditor(){
+  const ed=document.getElementById("anchorEditor"); if(!ed) return; ed.innerHTML="";
+  (S.anchors||[]).slice().sort((a,b)=>toMin(a.start)-toMin(b.start)).forEach(a=>{ const row=mk("div","editrow");
+    const s1=document.createElement("input"); s1.type="time"; s1.value=a.start; s1.onchange=()=>{ a.start=s1.value||a.start; save(); renderAll(); };
+    const s2=document.createElement("input"); s2.type="time"; s2.value=a.end; s2.onchange=()=>{ a.end=s2.value||a.end; save(); renderAll(); };
+    const tx=document.createElement("input"); tx.type="text"; tx.value=a.text; tx.onchange=()=>{ if(tx.value.trim()){ a.text=tx.value.trim(); save(); renderAll(); } };
+    const del=mk("button","btn warn small","✕"); del.title="Remove"; del.onclick=()=>{ S.anchors=S.anchors.filter(x=>x.id!==a.id); save(); renderAnchorEditor(); renderAll(); };
+    row.append(s1,s2,tx,del); ed.appendChild(row); });
+}
+// rebuild an untimed copy of the sprint with the timed template, keeping finished days
+function upgradePlanToTimed(plan){
+  const days=parsePlanText(SPRINT_TEMPLATE);
+  days.forEach((d,i)=>{ const n=i+1; const old=planTasks(plan.id).filter(t=>t.n===n && !t.dropped);
+    if(old.length && old.every(t=>t.done)) return;
+    const date = old.find(t=>!t.done)?.date || addDays(plan.start,i);
+    old.filter(t=>!t.done).forEach(t=>delete S.tasks[t.id]);
+    d.tasks.forEach(t=>{ const id=uid(); S.tasks[id]={id, text:t.text, start:t.start||null, end:t.end||null, planId:plan.id, n, tags:d.tags, date, origDate:date, done:false, doneAt:null, dropped:false, carried:0}; });
+    if(plan.days[i]) { plan.days[i].title=d.title; plan.days[i].tags=d.tags; } });
+}
+
 /* ------------------------------------------------------------------
    RENDER: SETTINGS
 ------------------------------------------------------------------ */
@@ -898,9 +1183,13 @@ function renderSettings(){
   document.getElementById("setDeep").value=S.settings.deepTarget;
   document.getElementById("setCarry").checked=!!S.settings.autoCarry;
   const ed=document.getElementById("habitEditor"); ed.innerHTML="";
+  renderAnchorEditor();
   S.habits.forEach(h=>{ const row=mk("div","row"); row.style.margin="6px 0";
     const sp=mk("span","",`${h.text}`); sp.style.flex="1 1 200px";
     const sl=mk("span","badge",h.slot);
+    const t1=document.createElement("input"); t1.type="time"; t1.value=h.start||""; t1.title="Start"; t1.onchange=()=>{ h.start=t1.value||null; if(!h.end && h.start) h.end=fromMin(toMin(h.start)+15); save(); renderAll(); };
+    const t2=document.createElement("input"); t2.type="time"; t2.value=h.end||""; t2.title="End"; t2.onchange=()=>{ h.end=t2.value||null; save(); renderAll(); };
+    row.append(t1,t2);
     const del=mk("button","btn warn small","Remove"); del.onclick=()=>{ S.habits=S.habits.filter(x=>x.id!==h.id); save(); renderSettings(); renderAll(); };
     row.append(sp,sl,del); ed.appendChild(row); });
   const last=(()=>{ try{ return localStorage.getItem("forgelog.lastBackup"); }catch(e){ return null; } })();
@@ -977,7 +1266,13 @@ function bind(){
     S.settings.autoCarry=document.getElementById("setCarry").checked; save(); renderAll();
     const b=document.getElementById("saveSettings"); b.textContent="Saved"; setTimeout(()=>b.textContent="Save settings",1400); };
   document.getElementById("addHabit").onclick=()=>{ const t=document.getElementById("newHabit").value.trim(); if(!t) return;
-    S.habits.push({id:uid(), text:t, slot:document.getElementById("newHabitSlot").value}); document.getElementById("newHabit").value=""; save(); renderSettings(); renderAll(); };
+    const hs=document.getElementById("newHabitStart").value||null, he=document.getElementById("newHabitEnd").value||null;
+    S.habits.push({id:uid(), text:t, slot:document.getElementById("newHabitSlot").value, start:hs, end:he||(hs?fromMin(toMin(hs)+15):null)}); document.getElementById("newHabit").value=""; save(); renderSettings(); renderAll(); };
+  document.getElementById("addAnchor").onclick=()=>{ const t=document.getElementById("newAnchor").value.trim(); if(!t) return;
+    (S.anchors||(S.anchors=[])).push({id:uid(), text:t, start:document.getElementById("newAnchorStart").value||"12:00", end:document.getElementById("newAnchorEnd").value||"12:30", icon:"break"});
+    document.getElementById("newAnchor").value=""; save(); renderSettings(); renderAll(); };
+  document.getElementById("timedRoutine").onclick=()=>{ if(!confirm("Replace your routine items and fixed daily blocks with the timed versions?")) return;
+    S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a})); save(); renderSettings(); renderAll(); };
 
   document.getElementById("themeBtn").onclick=()=>{ const r=document.documentElement;
     const dark= r.dataset.theme ? r.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
@@ -1012,6 +1307,7 @@ loadLocal();
 rollover();
 bind();
 renderAll();
+setInterval(()=>{ if(!document.hidden && current===todayKey() && !document.getElementById("tab-today").hidden && !S.timer) renderToday(); }, 60000);
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();

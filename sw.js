@@ -1,6 +1,6 @@
 // Offline app shell for Forge Log. Caches only the app files — your log data
 // lives in this browser's local storage and is never sent anywhere.
-const CACHE = "forgelog-v3";
+const CACHE = "forgelog-v4";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
