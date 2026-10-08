@@ -1,15 +1,27 @@
 {
-  "name": "Forge Log",
-  "short_name": "Forge Log",
-  "description": "Plan, build, test and ship — unfinished tasks carry forward. Data stays on this device.",
+  "name": "Sehat Log — صحت لاگ",
+  "short_name": "Sehat Log",
+  "description": "Diet, body, BMI and personal-care tracker for Pakistan, in English and Urdu. Data stays on this device.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#EEF0F4",
-  "theme_color": "#18202B",
+  "background_color": "#EEF2EE",
+  "theme_color": "#1C2733",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
-    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ]
 }

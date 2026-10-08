@@ -1,6 +1,6 @@
-// Offline app shell for Forge Log. Caches only the app files — your log data
+// Offline app shell for Sehat Log. Caches only the app files — your log data
 // lives in this browser's local storage and is never sent anywhere.
-const CACHE = "forgelog-v4";
+const CACHE = "cutlog-v22";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
@@ -15,4 +15,12 @@ self.addEventListener("fetch", e => {
     }
     return res;
   }).catch(() => hit)));
+});
+// tapping a medicine notification opens the app
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({type:"window", includeUncontrolled:true}).then(list => {
+    for (const c of list) { if ("focus" in c) return c.focus(); }
+    return self.clients.openWindow("./");
+  }));
 });
