@@ -3983,7 +3983,11 @@ saveLocal();
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 // offline app shell when served over http(s) (e.g. GitHub Pages); file:// works without it
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js", {updateViaCache:"none"}).then(r=>{ try{ r.update(); }catch(e){} }).catch(()=>{});
+  // a new version took over: reload once so it shows straight away (your data is untouched)
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{ if(hadController && !reloaded){ reloaded=true; location.reload(); } });
 }
 })();
 </script>
