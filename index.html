@@ -267,13 +267,14 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
   <section class="block" style="margin-top:22px">
     <h2 data-icon="plus">New plan</h2>
     <div class="grid2" style="max-width:640px">
-      <div class="field"><label for="pName">Name</label><input id="pName" placeholder="e.g. LegalSpy sprint"></div>
+      <div class="field"><label for="pName">Name</label><input id="pName" placeholder="e.g. Clinic Scribe sprint"></div>
       <div class="field"><label for="pStart">Start date</label><input id="pStart" type="date"></div>
     </div>
     <div class="field" style="margin-top:10px"><label for="pText">Days and tasks — one "## Day title | tags" line per day, then "- task" lines</label>
       <textarea id="pText" style="min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem"></textarea></div>
     <div class="row" style="margin-top:10px">
       <button class="btn" id="createPlan">Create plan</button>
+      <button class="btn ghost" id="loadScribe">Load the Clinic Scribe sprint (16 Oct – 3 Nov)</button>
       <button class="btn ghost" id="loadTemplate">Load the 18-day LegalSpy sprint</button>
       <button class="btn ghost" id="loadClients">Load the client-hunting plan</button>
     </div>
@@ -587,23 +588,215 @@ const CLIENT_TEMPLATE = `## Offer, niche and place | Client hunting
 - Keep a human review step before anything is sent
 - Schedule it daily and track replies per 10 emails`;
 
+const SCRIBE_TEMPLATE = `## Design part 1 · LegalSpy upgrade 1 | Clinic Scribe, System design, RAG
+- 10:30-13:30 Doctor · Your design doc, steps 1–4: problem, constraints (M1/M2, 8 GB, offline, ~100 patients/day, 5–60 min), failure modes, the numbers — written by you
+- 14:15-16:45 LegalSpy · Finish the document-extraction rebuild (PyMuPDF + OCR + MarkItDown → ExtractedDoc) and re-ingest
+- 17:00-17:30 Closed-book test: explain your 4 design steps out loud in 5 minutes
+- 17:30-18:30 Doctor · Set up the Mac: repo, Python env, whisper.cpp or MLX Whisper, Ollama; transcribe one test clip
+- 19:45-20:45 Market · LinkedIn headline + About: "AI engineer — voice, RAG and document AI for clinics and law firms"
+- 20:45-21:00 Post (LinkedIn + X): Day 1/19 — Why I'm building an offline clinic scribe with a real doctor — the problem and the limits (8 GB Mac, no internet, Urdu + English)
+- 21:30-22:30 Interview practice: DSA: arrays & hashing — 2 problems
+
+## Design part 2 · LegalSpy upgrade 2 | Clinic Scribe, System design, Databases
+- 10:30-13:30 Doctor · Your design doc, steps 5–10: decompose, approach, architecture, boundaries, cross-cutting, trade-offs → send it to Claude for review
+- 14:15-16:45 LegalSpy · Fix chat history lost on restart (move SQLite out of the container: Turso / Supabase / Neon) + the lawyer's top request; show him
+- 17:00-17:30 Closed-book test: draw your architecture from memory and defend 3 decisions
+- 17:30-18:30 Doctor · Record 5 role-play visits (Urdu + English mix) with a friend — child fever, adult diabetes, cough, diarrhoea, follow-up
+- 19:45-20:45 Market · Fiverr gig 1 live (RAG chatbot over documents — LegalSpy as proof); apply 3
+- 20:45-21:00 Post (LinkedIn + X): Day 2/19 — My system design in one diagram + one trade-off I made and why
+- 21:30-22:30 Interview practice: SQL: joins — 3 queries
+
+## Speech bake-off · Lab: Ingestion & chunking | Clinic Scribe, Speech, RAG, Evaluation
+- 10:30-13:30 Doctor · Correct the 5 transcripts by hand (Dataset A) → run 3 Whisper options → WER + CER after Urdu normalisation + speed per minute of audio
+- 14:15-16:45 Lab · Ingestion & chunking: download drug labels (DailyMed/openFDA) → extract → 3 chunking strategies → metadata (drug, section, age group) → compare chunk counts and quality
+- 17:00-17:30 Closed-book test: why WER differs from CER for Urdu; when fixed vs semantic chunking wins
+- 17:30-18:30 Weekly review (30 min): what slipped, what to cut; plan next week
+- 19:45-20:45 Market · 2 personal messages (health-tech / legal-tech people); apply 3
+- 20:45-21:00 Post (LinkedIn + X): Day 3/19 — I tested 3 Whisper models on Urdu–English speech: WER, CER and speed
+- 21:30-22:30 Interview practice: DSA: two pointers — 2 problems
+
+## Live transcript · Lab: Embeddings & hybrid retrieval | Clinic Scribe, Speech, Streaming, RAG
+- 10:30-13:30 Doctor · Browser mic → WebSocket → 16 kHz chunks → VAD → Whisper → transcript appears live on screen
+- 14:15-16:45 Lab · Embeddings & hybrid retrieval over the drug-label chunks: dense (multilingual e5) + BM25 + RRF; measure hit@5 on 20 questions
+- 17:00-17:30 Closed-book test: backpressure — what happens when transcription falls behind speech, and your fix
+- 17:30-18:30 Doctor · Time it: seconds of delay per 30-s chunk on your Mac; write the number in your design doc
+- 19:45-20:45 Market · Upwork profile + 2 portfolio items (LegalSpy, FinSight); apply 3
+- 20:45-21:00 Post (LinkedIn + X): Day 4/19 — Live transcription on a laptop: seconds of delay per 30-s chunk + hybrid retrieval hit@5 from today's lab
+- 21:30-22:30 Interview practice: SQL: GROUP BY & HAVING — 3 queries
+
+## Intake + session flow · Lab: Reranking & RAG evaluation | Clinic Scribe, Evaluation, RAG
+- 10:30-13:30 Doctor · Intake screen (name, age, height, weight) → start / stop recording → session held in memory only, cleared after print
+- 14:15-16:45 Lab · Reranking (cross-encoder) + RAG evaluation: hit@1 vs hit@5, faithfulness with an LLM judge, before/after table
+- 17:00-17:30 Closed-book test: precision vs recall in retrieval; when a reranker is worth its latency
+- 17:30-18:30 Doctor · Record 5 more role-play visits and correct their transcripts (10 total)
+- 19:45-20:45 Market · Apply 3 · message 2
+- 20:45-21:00 Post (LinkedIn + X): Day 5/19 — Does a reranker help? Before/after table from today's lab
+- 21:30-22:30 Interview practice: DSA: sliding window — 2 problems
+
+## Summary v0 (prompt only) · Lab: Agentic RAG & tools | Clinic Scribe, Structured output, Agents
+- 10:30-13:30 Doctor · Summary button: local LLM → structured JSON (your schema) → every fact carries a quote → code checks each quote exists in the transcript
+- 14:15-16:45 Lab · Agentic RAG: a LangGraph agent with tools (search labels, check age limit) — compare against the fixed pipeline on the same 20 questions
+- 17:00-17:30 Closed-book test: workflow vs agent — when NOT to use an agent
+- 17:30-18:30 Doctor · Urdu toggle for the summary; test on 3 transcripts
+- 19:45-20:45 Market · LinkedIn post: "building a private clinic scribe with a real doctor" (no patient data); apply 2
+- 20:45-21:00 Post (LinkedIn + X): Day 6/19 — Summaries that prove themselves: every fact carries a quote from the conversation
+- 21:30-22:30 Interview practice: SQL: window functions — 3 queries
+
+## Test set + baseline · Lab: GraphRAG | Clinic Scribe, Evaluation, GraphRAG
+- 10:30-13:30 Doctor · Lock away the test set (Dataset D): gold summaries + must-have facts → scoring script: facts recall, invented facts, allergy caught
+- 14:15-16:45 Lab · GraphRAG: drug → caution → age-group graph from the labels; answer 10 multi-hop questions plain RAG gets wrong
+- 17:00-17:30 Closed-book test: why the test set must never touch training
+- 17:30-18:30 Doctor · Run the prompt-only baseline on the test set → write the 3 numbers down (this is what fine-tuning must beat)
+- 19:45-20:45 Market · Apply 3 · message 2
+- 20:45-21:00 Post (LinkedIn + X): Day 7/19 — Why I locked away a test set before training anything — and my baseline numbers
+- 21:30-22:30 Interview practice: DSA: stacks — 2 problems
+
+## Dose engine · Lab: Classic ML | Clinic Scribe, Rule engines, ML
+- 10:30-13:30 Doctor · Ask the doctor for her top 20–30 generics → rule-row format (your design) → dose code with unit tests: max dose, min age, rounding to syrup volume
+- 14:15-16:45 Lab · Classic ML: no-show prediction on public appointment data — features, train/test split, logistic regression vs gradient boosting, precision/recall/AUC
+- 17:00-17:30 Closed-book test: why dosing is code, not AI; precision vs recall for no-shows
+- 17:30-18:30 Doctor · Boundary tests: youngest age, heaviest child, cap hit exactly, missing weight
+- 19:45-20:45 Market · Fiverr gig 2 (PDF / scanned document → clean data); apply 2
+- 20:45-21:00 Post (LinkedIn + X): Day 8/19 — Why medicine doses are plain code, not AI — and the edge cases I test
+- 21:30-22:30 Interview practice: SQL: CTEs + subqueries — 3 queries
+
+## Prescription + print · Lab: Deep learning training loop | Clinic Scribe, Deep learning
+- 10:30-13:30 Doctor · Prescription screen: type a generic → 1–2 dose options → doctor confirms or edits → printable page
+- 14:15-16:45 Lab · Deep learning: your own PyTorch loop (dataset, batches, loss, backprop, optimiser, validation) on a small health dataset
+- 17:00-17:30 Closed-book test: what one training step does, line by line
+- 17:30-18:30 Doctor · Full run: intake → record → summary → prescription → print; note every rough edge
+- 19:45-20:45 Market · Apply 3 · message 2
+- 20:45-21:00 Post (LinkedIn + X): Day 9/19 — First full run on a made-up patient: intake → transcript → summary → prescription → print (short screen video)
+- 21:30-22:30 Interview practice: DSA: binary search — 2 problems
+
+## Show v0 to the doctor · Weekly review | Clinic Scribe, Revision
+- 10:30-13:30 Doctor · Demo v0 to her; write down every reaction; she signs the first medicine rows; agree on how she will pick summaries
+- 14:15-16:45 Revision: blank-page recall of labs 1–7 (ingestion → deep learning), then check your notes
+- 17:00-17:30 Closed-book test: the weakest lab, out loud
+- 17:30-18:30 Weekly review (30 min): what slipped, what to cut; plan next week
+- 19:45-20:45 Market · 2 personal messages; log replies
+- 20:45-21:00 Post (LinkedIn + X): Day 10/19 — What I learned showing v0 to a doctor (ask her OK first; no patient data)
+- 21:30-22:30 Interview practice: Revise this week's DSA mistakes
+
+## Her fixes + picking screen · Lab: NLP for Urdu | Clinic Scribe, NLP, Fine-tuning data
+- 10:30-13:30 Doctor · Fix her top issues from the demo
+- 14:15-16:45 Lab · NLP: how tokenizers split Urdu vs English (count tokens) + drug-name matching for misheard names (fuzzy match vs NER)
+- 17:00-17:30 Closed-book test: why Urdu costs more tokens; what that does to speed
+- 17:30-18:30 Doctor · Picking screen: draft A vs draft B → she picks and edits → saves SFT rows (Dataset B) and DPO pairs (Dataset C)
+- 19:45-20:45 Market · Fiverr gig 3 (AI agent / workflow automation); apply 2
+- 20:45-21:00 Post (LinkedIn + X): Day 11/19 — Urdu costs more tokens than English: the counts and what it does to speed
+- 21:30-22:30 Interview practice: DSA: linked lists — 2 problems
+
+## Long sessions · Lab: Transformers | Clinic Scribe, Context engineering, Transformers
+- 10:30-13:30 Doctor · 30–60-minute visits: rolling summary (notes per chunk, merge on button press) — measure button-to-summary seconds
+- 14:15-16:45 Lab · Transformers: attention by hand on 3 tokens (Q, K, V, softmax), then the same in code; compare with a library layer
+- 17:00-17:30 Closed-book test: prefill vs decode and why long transcripts are slow
+- 17:30-18:30 Doctor · Memory test on 8 GB: Whisper + LLM load order; record peak RAM
+- 19:45-20:45 Market · Apply 3 · message 2
+- 20:45-21:00 Post (LinkedIn + X): Day 12/19 — 60-minute consultations on 8 GB: rolling summaries and peak memory
+- 21:30-22:30 Interview practice: SQL: practice set — 3 queries
+
+## First SFT run · Lab: LLM serving | Clinic Scribe, Fine-tuning, Serving
+- 10:30-13:30 Doctor · SFT with QLoRA on Kaggle (free T4) using her picks so far → download the adapter → merge → convert to MLX / GGUF
+- 14:15-16:45 Lab · LLM serving: vLLM on Kaggle — batching, KV cache, tokens/second at 1 vs 8 users
+- 17:00-17:30 Closed-book test: LoRA in numbers — what is trained, what is frozen, why it fits on a T4
+- 17:30-18:30 Doctor · Score the SFT model on the locked test set vs the baseline → keep it only if it wins
+- 19:45-20:45 Market · LinkedIn post: what you learned from your first local fine-tune; apply 2
+- 20:45-21:00 Post (LinkedIn + X): Day 13/19 — My first local fine-tune: SFT vs the prompt-only baseline, in numbers
+- 21:30-22:30 Interview practice: DSA: trees — 2 problems
+
+## Privacy + safety · Lab: DPO & GRPO | Clinic Scribe, Guardrails, RLHF
+- 10:30-13:30 Doctor · Consent screen, audio deleted after the session, plausibility checks, allergy-class warning on the prescription
+- 14:15-16:45 Lab · DPO and GRPO on Kaggle with a small model — loss by hand for one pair, then the run
+- 17:00-17:30 Closed-book test: DPO loss for one pair, step by step
+- 17:30-18:30 Doctor · End-to-end test with 5 recordings; list every failure
+- 19:45-20:45 Market · Apply 3 · message 2
+- 20:45-21:00 Post (LinkedIn + X): Day 14/19 — Privacy by design: consent screen, audio deleted, allergy warnings
+- 21:30-22:30 Interview practice: DSA: graphs (BFS / DFS) — 2 problems
+
+## Pilot in the clinic · Lab: Observability | Clinic Scribe, Observability, Evaluation
+- 10:30-13:30 Doctor · Pilot with consenting patients (or a realistic simulation): time per patient, summary errors, dose edits
+- 14:15-16:45 Lab · Observability: trace each step (STT, summary, dose) with timings and token counts; a tiny local dashboard
+- 17:00-17:30 Closed-book test: what you would watch for in week 1 of real use
+- 17:30-18:30 Doctor · Fix the worst pilot issue
+- 19:45-20:45 Market · Apply 3 · message 2
+- 20:45-21:00 Post (LinkedIn + X): Day 15/19 — Pilot day: early numbers on time saved per patient
+- 21:30-22:30 Interview practice: SQL: practice set — 3 queries
+
+## DPO on her picks · Lab: MCP & agent frameworks | Clinic Scribe, Fine-tuning, Agents
+- 10:30-13:30 Doctor · DPO on her A-vs-B picks (or more SFT data if picks are too few); if WER is bad, a Whisper LoRA on Kaggle
+- 14:15-16:45 Lab · MCP + agent frameworks: the same small agent in two frameworks; expose one tool through MCP
+- 17:00-17:30 Closed-book test: SFT vs DPO — what each learns from her data
+- 17:30-18:30 Doctor · Score: baseline vs SFT vs SFT+DPO on the locked test set → one table
+- 19:45-20:45 Market · Outreach: 5 messages to doctors or clinics with the progress so far
+- 20:45-21:00 Post (LinkedIn + X): Day 16/19 — Baseline vs SFT vs SFT + DPO — one table, honest results
+- 21:30-22:30 Interview practice: DSA: heaps — 2 problems
+
+## After numbers + demo · Weekly review | Clinic Scribe, Revision
+- 10:30-13:30 Doctor · Measure "after": minutes saved per patient, dose-calculation time, summary accuracy → record a 2-minute demo (no patient data)
+- 14:15-16:45 Revision: blank-page recall of labs 8–13, then check your notes
+- 17:00-17:30 Closed-book test: explain the whole scribe in 5 minutes
+- 17:30-18:30 Weekly review (30 min): what slipped, what to cut; plan the last two days
+- 19:45-20:45 Market · 2 personal messages; log replies
+- 20:45-21:00 Post (LinkedIn + X): Day 17/19 — 2-minute demo video of the clinic scribe
+- 21:30-22:30 Interview practice: Revise this week's DSA mistakes
+
+## Case study · Lab: MLOps | Clinic Scribe, MLOps, Portfolio
+- 10:30-13:30 Doctor · Case study: problem, your design, numbers before/after, limits, what comes next (stage 2 = booking + live queue)
+- 14:15-16:45 Lab · MLOps: Docker + FastAPI + a CI eval gate (tests fail if accuracy drops)
+- 17:00-17:30 Closed-book test: what your CI gate checks and why
+- 17:30-18:30 Doctor · Ask her for a quote and 2–3 colleague introductions
+- 19:45-20:45 Market · Apply 5 with the case study
+- 20:45-21:00 Post (LinkedIn + X): Day 18/19 — Case study: problem, design, before/after numbers, limits
+- 21:30-22:30 Interview practice: Mock interview: 30 minutes, self-recorded
+
+## Portfolio + next plan · Lab: Threat model & design mock | Clinic Scribe, Security, System design
+- 10:30-13:30 Doctor · Portfolio page: doctor + lawyer case studies, lab results, demo video
+- 14:15-16:45 Lab · Threat model of the scribe (who could see what, how) + a 45-minute system-design mock on a new problem
+- 17:00-17:30 Closed-book test: your design method in 10 steps, from memory
+- 17:30-18:30 Plan the next 4 weeks (stage 2: booking + live queue)
+- 19:45-20:45 Market · Post the portfolio page + case study
+- 20:45-21:00 Post (LinkedIn + X): Day 19/19 — Portfolio page live + what I'm building next
+- 21:30-22:30 Interview practice: DSA: mixed review — 2 problems`;
+const SCRIBE_START = "2026-10-16";
+
 const DEFAULT_HABITS = [
-  {id:"h1", text:"Job keep-alive: reply to recruiters and messages", slot:"morning", start:"08:00", end:"08:15"},
+  {id:"h1", text:"Job keep-alive: reply to recruiters and messages", slot:"morning", start:"10:15", end:"10:30"},
   {id:"h4", text:"Commit and push today's work", slot:"afternoon", start:"16:45", end:"17:00"},
-  {id:"h5", text:"Day review: log deep work, test score and notes; write tomorrow's first task", slot:"evening", start:"20:45", end:"21:15"}
+  {id:"h5", text:"Day review: log deep work, test score and notes; write tomorrow's first task", slot:"evening", start:"21:00", end:"21:30"}
 ];
 // fixed blocks that repeat every day (meals, gym, sleep) — shown in the schedule, not counted as tasks
 const DEFAULT_ANCHORS = [
+  {id:"a0", text:"Sleep", start:"00:00", end:"07:00", icon:"moon"},
   {id:"a1", text:"Wake up · water · log sleep in Sehat Log", start:"07:00", end:"07:30", icon:"sun"},
   {id:"a2", text:"Breakfast", start:"07:30", end:"08:00", icon:"meal"},
-  {id:"a3", text:"Gym", start:"09:00", end:"10:15", icon:"gym"},
-  {id:"a4", text:"Shower and get ready", start:"10:15", end:"10:30", icon:"break"},
-  {id:"a5", text:"Lunch + 15-minute walk", start:"13:30", end:"14:15", icon:"meal"},
+  {id:"a3", text:"Gym", start:"08:00", end:"10:00", icon:"gym"},
+  {id:"a4", text:"Shower and get ready", start:"10:00", end:"10:15", icon:"break"},
+  {id:"a5", text:"Lunch break + 15-minute walk", start:"13:30", end:"14:15", icon:"meal"},
   {id:"a6", text:"Walk, family, free time", start:"18:30", end:"19:00", icon:"break"},
   {id:"a7", text:"Dinner", start:"19:00", end:"19:45", icon:"meal"},
-  {id:"a8", text:"Free time · wind down, no screens after 22:00", start:"21:15", end:"22:30", icon:"break"},
-  {id:"a9", text:"Sleep", start:"22:30", end:"23:59", icon:"moon"}
+  {id:"a9", text:"Free time · family", start:"22:30", end:"23:30", icon:"break"},
+  {id:"a10", text:"Wind down · no screens · sleep at 12", start:"23:30", end:"23:59", icon:"moon"}
 ];
+const ROUTINE_VERSION = 3;
+// one-time update: new daily routine + the Clinic Scribe sprint (older plans are paused, not deleted)
+function migrate(){
+  const v=S.routineV||1; if(v >= ROUTINE_VERSION) return;
+  S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a}));
+  const sp=S.plans.find(p=>p.name==="Clinic Scribe sprint");
+  if(!sp){
+    S.plans.forEach(p=>{ p.active=false; });
+    createPlan("Clinic Scribe sprint", SCRIBE_START, SCRIBE_TEMPLATE);
+  } else {
+    // add the daily build-in-public post to each day of an existing sprint
+    parsePlanText(SCRIBE_TEMPLATE).forEach((d,i)=>{ const n=i+1; const ts=planTasks(sp.id).filter(t=>t.n===n);
+      if(ts.some(t=>/^Post \(LinkedIn/.test(t.text))) return;
+      const post=d.tasks.find(t=>/^Post \(LinkedIn/.test(t.text)); if(!post) return;
+      const date=(ts.find(t=>!t.done)||ts[0]||{}).date || addDays(sp.start,i); const id=uid();
+      S.tasks[id]={id, text:post.text, start:post.start, end:post.end, planId:sp.id, n, tags:d.tags, date, origDate:date, done:false, doneAt:null, dropped:false, carried:0}; });
+  }
+  S.routineV=ROUTINE_VERSION; saveLocal();
+}
 
 /* ------------------------------------------------------------------
    STATE
@@ -1288,6 +1481,7 @@ function bind(){
     window.scrollTo(0,0); });
 
   document.getElementById("pStart").value=todayKey();
+  document.getElementById("loadScribe").onclick=()=>{ document.getElementById("pName").value="Clinic Scribe sprint"; document.getElementById("pStart").value=SCRIBE_START; document.getElementById("pText").value=SCRIBE_TEMPLATE; };
   document.getElementById("loadTemplate").onclick=()=>{ document.getElementById("pName").value="LegalSpy sprint"; document.getElementById("pText").value=SPRINT_TEMPLATE; };
   document.getElementById("loadClients").onclick=()=>{ document.getElementById("pName").value="Client hunting"; document.getElementById("pText").value=CLIENT_TEMPLATE; };
   document.getElementById("createPlan").onclick=()=>{
@@ -1339,6 +1533,7 @@ function bind(){
 ------------------------------------------------------------------ */
 try{ const t=localStorage.getItem("forgelog.theme"); if(t) document.documentElement.dataset.theme=t; }catch(e){}
 loadLocal();
+migrate();
 rollover();
 bind();
 renderAll();
