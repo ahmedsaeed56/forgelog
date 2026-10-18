@@ -274,7 +274,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
       <textarea id="pText" style="min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem"></textarea></div>
     <div class="row" style="margin-top:10px">
       <button class="btn" id="createPlan">Create plan</button>
-      <button class="btn ghost" id="loadScribe">Load the Clinic Scribe sprint (16 Oct – 3 Nov)</button>
+      <button class="btn ghost" id="loadScribe">Load the Clinic Scribe 2-week sprint (19 Oct – 1 Nov)</button>
       <button class="btn ghost" id="loadTemplate">Load the 18-day LegalSpy sprint</button>
       <button class="btn ghost" id="loadClients">Load the client-hunting plan</button>
     </div>
@@ -759,41 +759,78 @@ const SCRIBE_TEMPLATE = `## Design part 1 · LegalSpy upgrade 1 | Clinic Scribe,
 - 20:45-21:00 Post (LinkedIn + X): Day 19/19 — Portfolio page live + what I'm building next
 - 21:30-22:30 Interview practice: DSA: mixed review — 2 problems`;
 const SCRIBE_START = "2026-10-16";
+const SPRINT2_NAME = "Clinic Scribe · 2-week sprint";
+const SPRINT2_START = "2026-10-19";
+const SPRINT2_TEMPLATE = `## Design 1 · problem + constraints | Clinic Scribe, System design
+- Must: Design steps 1–2 (problem + constraints) written in your own words in the design doc + list of open questions for the doctor
+
+## Design 2 · failures + numbers | Clinic Scribe, System design
+- Must: Steps 3–4: failures first + numbers (write your guesses; the calculations are done live with Claude in the Questions block)
+
+## Design 3 · decompose + options | Clinic Scribe, System design
+- Must: Steps 5–6: split into parts (speech-to-text, summary, dose, screen, print) + 2–3 options per part with your pick and why
+
+## Design 4 · architecture → review | Clinic Scribe, System design
+- Must: Steps 7–10: architecture, boundaries, cross-cutting, trade-offs — then send the whole doc to Claude for review
+
+## Build 1 · app + recording | Clinic Scribe, Build
+- Must: App runs on the laptop: patient form (name, age, height, weight) + record button that saves the audio
+
+## Build 2 · local transcription | Clinic Scribe, Speech
+- Must: A recorded Urdu + English clip becomes text locally — write down how long it took
+
+## Buffer + week review | Clinic Scribe, Revision
+- Must: Finish anything carried over · week review with Claude · one longer LinkedIn post about week 1
+
+## Build 3 · summary | Clinic Scribe, LLM
+- Must: Summary button works fully locally (English, with an Urdu toggle)
+
+## Build 4 · dose module | Clinic Scribe, Rule engines
+- Must: Dose module as plain formula code with tests (formulas confirmed by the doctor)
+
+## Build 5 · prescription + print | Clinic Scribe, Build
+- Must: Prescription screen (generic name → dose shown → doctor writes the dose) + print
+
+## Build 6 · full run + fix | Clinic Scribe, Evaluation
+- Must: Full run on a realistic long consultation; measure each step; fix the biggest slow part
+
+## Checks + README + demo | Clinic Scribe, Evaluation, Portfolio
+- Must: Transcript accuracy on 10 clips + summary checks · README · 2-minute demo video
+
+## Doctor demo | Clinic Scribe, Feedback
+- Must: Send to the doctor / demo it; write the doctor's feedback in the design doc
+
+## Buffer + launch | Clinic Scribe, Portfolio
+- Must: Fix the doctor's feedback · launch post · plan for stage 2`;
+
 
 const DEFAULT_HABITS = [
-  {id:"h1", text:"Job keep-alive: reply to recruiters and messages", slot:"morning", start:"10:15", end:"10:30"},
-  {id:"h4", text:"Commit and push today's work", slot:"afternoon", start:"16:45", end:"17:00"},
-  {id:"h5", text:"Day review: log deep work, test score and notes; write tomorrow's first task", slot:"evening", start:"21:00", end:"21:30"}
+  {id:"hv", text:"Visibility hour: 1 LinkedIn post on yesterday's progress · 2–3 job applications · 1–2 Fiverr/Upwork outreaches", slot:"morning", start:"07:00", end:"08:00"},
+  {id:"hq", text:"Questions block: only today's parking-lot items, with Claude (the only place deep study is allowed)", slot:"evening", start:"18:30", end:"20:00"},
+  {id:"hs", text:"Shutdown: tick today, write tomorrow's first task, one line for tomorrow's post", slot:"evening", start:"22:30", end:"23:00"}
 ];
-// fixed blocks that repeat every day (meals, gym, sleep) — shown in the schedule, not counted as tasks
+// fixed blocks that repeat every day — shown in the schedule, ticked on Today
 const DEFAULT_ANCHORS = [
   {id:"a0", text:"Sleep", start:"00:00", end:"07:00", icon:"moon"},
-  {id:"a1", text:"Wake up · water · log sleep in Sehat Log", start:"07:00", end:"07:30", icon:"sun"},
-  {id:"a2", text:"Breakfast", start:"07:30", end:"08:00", icon:"meal"},
   {id:"a3", text:"Gym", start:"08:00", end:"10:00", icon:"gym"},
-  {id:"a4", text:"Shower and get ready", start:"10:00", end:"10:15", icon:"break"},
-  {id:"a5", text:"Lunch break + 15-minute walk", start:"13:30", end:"14:15", icon:"meal"},
-  {id:"a6", text:"Walk, family, free time", start:"18:30", end:"19:00", icon:"break"},
-  {id:"a7", text:"Dinner", start:"19:00", end:"19:45", icon:"meal"},
-  {id:"a9", text:"Free time · family", start:"22:30", end:"23:30", icon:"break"},
-  {id:"a10", text:"Wind down · no screens · sleep at 12", start:"23:30", end:"23:59", icon:"moon"}
+  {id:"a4", text:"Breakfast + shower", start:"10:00", end:"10:30", icon:"meal"},
+  {id:"p1", text:"Project block 1 — today's Must, hardest part first, phone away", start:"10:30", end:"13:30", icon:"work"},
+  {id:"a5", text:"Lunch + rest", start:"13:30", end:"14:30", icon:"meal"},
+  {id:"p2", text:"Project block 2 — continue the Must (done? start tomorrow's)", start:"14:30", end:"17:30", icon:"work"},
+  {id:"a6", text:"Break · walk", start:"17:30", end:"18:30", icon:"break"},
+  {id:"a7", text:"Dinner", start:"20:00", end:"21:00", icon:"meal"},
+  {id:"p3", text:"Project block 3 — finish or catch up, send work to Claude for review", start:"21:00", end:"22:30", icon:"work"},
+  {id:"a9", text:"Free time", start:"23:00", end:"23:45", icon:"break"},
+  {id:"a10", text:"Wind down · no screens · sleep at 12", start:"23:45", end:"23:59", icon:"moon"}
 ];
-const ROUTINE_VERSION = 3;
-// one-time update: new daily routine + the Clinic Scribe sprint (older plans are paused, not deleted)
+const ROUTINE_VERSION = 4;
+// one-time update (v4): fixed timetable + the 2-week Clinic Scribe sprint. Older plans are paused, not deleted.
 function migrate(){
   const v=S.routineV||1; if(v >= ROUTINE_VERSION) return;
   S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a}));
-  const sp=S.plans.find(p=>p.name==="Clinic Scribe sprint");
-  if(!sp){
+  if(!S.plans.find(p=>p.name===SPRINT2_NAME)){
     S.plans.forEach(p=>{ p.active=false; });
-    createPlan("Clinic Scribe sprint", SCRIBE_START, SCRIBE_TEMPLATE);
-  } else {
-    // add the daily build-in-public post to each day of an existing sprint
-    parsePlanText(SCRIBE_TEMPLATE).forEach((d,i)=>{ const n=i+1; const ts=planTasks(sp.id).filter(t=>t.n===n);
-      if(ts.some(t=>/^Post \(LinkedIn/.test(t.text))) return;
-      const post=d.tasks.find(t=>/^Post \(LinkedIn/.test(t.text)); if(!post) return;
-      const date=(ts.find(t=>!t.done)||ts[0]||{}).date || addDays(sp.start,i); const id=uid();
-      S.tasks[id]={id, text:post.text, start:post.start, end:post.end, planId:sp.id, n, tags:d.tags, date, origDate:date, done:false, doneAt:null, dropped:false, carried:0}; });
+    createPlan(SPRINT2_NAME, SPRINT2_START, SPRINT2_TEMPLATE);
   }
   S.routineV=ROUTINE_VERSION; saveLocal();
 }
@@ -956,7 +993,7 @@ function renderToday(){
   const mine=list.filter(t=>!t.planId); if(mine.length){ const dn=mine.filter(t=>t.done).length;
     R.push({lbl:"My tasks", icon:"tasks", frac:dn/mine.length, color:"var(--done)", c:`${dn}/${mine.length}`, v:"done"}); }
   if(!R.length) R.push({lbl:"Tasks", icon:"tasks", frac:0, color:"var(--done)", c:"0/0", v:"done"});
-  const nb=(S.anchors||[]).length; if(nb) R.push({lbl:"Daily blocks", icon:"routine", frac:blocksDone(current)/nb, color:"var(--blk)", c:`${blocksDone(current)}/${nb}`, v:"meals, gym, sleep"});
+  const nb=(S.anchors||[]).length; if(nb) R.push({lbl:"Daily blocks", icon:"routine", frac:blocksDone(current)/nb, color:"var(--blk)", c:`${blocksDone(current)}/${nb}`, v:"fixed blocks"});
   R.push(
     {lbl:"Deep work", icon:"clock", frac:(d.deepHours||0)/S.settings.deepTarget, color:"var(--deep)", c:(d.deepHours||0)+"h", v:`of ${S.settings.deepTarget} h`},
     {lbl:"Routine", icon:"routine", frac:S.habits.length?habitsDone(current)/S.habits.length:0, color:"var(--hab)", c:`${habitsDone(current)}/${S.habits.length}`, v:"items"},
@@ -1259,21 +1296,49 @@ function fromMin(x){ x=Math.max(0,Math.min(24*60-1,Math.round(x))); return Strin
 function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
 function fmt12(t){ if(!t) return ""; const [h,m]=t.split(":").map(Number); return `${((h+11)%12)+1}:${String(m).padStart(2,"0")}${h<12?"am":"pm"}`; }
 function lateShift(k, startMin){ const d=S.days[k]; if(!d||!d.late) return 0; return startMin>=d.late.from ? d.late.by : 0; }
-function scheduleFor(k){
+
+/* ------------------------------------------------------------------
+   LATE WAKE-UP: rebuild today from the wake time. Same order as a normal
+   day, bedtime stays fixed, lowest-priority blocks shrink or are skipped.
+   rule = [minimum minutes, full minutes, priority (1 = most important)]
+------------------------------------------------------------------ */
+const WAKE_RULES={hv:[30,60,5.5], a3:[60,120,5], a4:[20,30,3], p1:[120,180,1], a5:[30,60,3], p2:[0,180,4],
+  a6:[10,60,8], hq:[0,90,7], a7:[30,60,3], p3:[0,90,6], hs:[15,30,3], a9:[0,45,9]};
+const WAKE_STOP=23*60+45; // everything must fit before wind-down
+function wakeFixed(it){ return it.kind==="anchor" && (it.icon==="moon" || it.id==="a0" || it.id==="a10"); }
+function applyWake(items, wake){
+  const flex=items.filter(it=>!wakeFixed(it)).sort((a,b)=>a.s-b.s);
+  const R=flex.map(it=>{ const r=WAKE_RULES[it.id]; const dur=Math.max(15,it.e-it.s); return r?{min:r[0],full:r[1],pr:r[2]}:{min:0,full:dur,pr:6.5}; });
+  const avail=Math.max(0, WAKE_STOP-wake);
+  const alloc=R.map(r=>r.min); const sum=()=>alloc.reduce((x,y)=>x+y,0);
+  const byLow=R.map((r,i)=>i).sort((a,b)=>R[b].pr-R[a].pr);
+  for(const i of byLow){ if(sum()<=avail) break; if(R[i].pr>1) alloc[i]=0; }
+  if(sum()>avail){ const i=R.findIndex(r=>r.pr===1); if(i>=0) alloc[i]=Math.max(0, avail-(sum()-alloc[i])); }
+  let left=avail-sum();
+  R.map((r,i)=>i).sort((a,b)=>R[a].pr-R[b].pr).forEach(i=>{ const add=Math.max(0,Math.min(R[i].full-alloc[i], left)); alloc[i]+=add; left-=add; });
+  flex.forEach((it,i)=>{ if(R[i].min===0 && alloc[i]>0 && alloc[i]<30) alloc[i]=0; });
+  let t=wake;
+  flex.forEach((it,i)=>{ if(alloc[i]>0){ it.s=t; it.e=t+alloc[i]; t=it.e; } else it.skipped=true; });
+  return items;
+}
+function scheduleFor(k, withSkipped){
   const items=[];
   tasksOn(k).forEach(t=>{ if(t.start) items.push({kind:"task", id:t.id, text:t.text, start:t.start, end:t.end, done:t.done, ref:t}); });
   const dd=S.days[k]||{};
   S.habits.forEach(h=>{ if(h.start) items.push({kind:"habit", id:h.id, text:h.text, start:h.start, end:h.end||h.start, done:!!(dd.habits&&dd.habits[h.id]), ref:h}); });
   (S.anchors||[]).forEach(a=>items.push({kind:"anchor", id:a.id, text:a.text, start:a.start, end:a.end, icon:a.icon, done:!!(dd.blocks&&dd.blocks[a.id])}));
-  items.forEach(it=>{ const sh=lateShift(k,toMin(it.start)); it.s=toMin(it.start)+sh; it.e=toMin(it.end)+sh; if(it.e<=it.s) it.e=it.s+15; });
-  return items.sort((a,b)=>a.s-b.s || (a.kind==="anchor")-(b.kind==="anchor"));
+  items.forEach(it=>{ it.s=toMin(it.start); it.e=toMin(it.end); if(it.e<=it.s) it.e=it.s+15; });
+  if(dd.wake!=null) applyWake(items, dd.wake);
+  items.forEach(it=>{ if(it.skipped) return; const sh=lateShift(k,it.s); it.s+=sh; it.e+=sh; });
+  const out=withSkipped?items:items.filter(it=>!it.skipped);
+  return out.sort((a,b)=>(a.skipped-b.skipped) || a.s-b.s || (a.kind==="anchor")-(b.kind==="anchor"));
 }
-const ANCHOR_ICON={sun:"☀",meal:"🍽",gym:"🏋",break:"☕",moon:"☾"};
+const ANCHOR_ICON={sun:"☀",meal:"🍽",gym:"🏋",break:"☕",moon:"☾",work:"⚒"};
 
 function renderSchedule(list){
   const ul=document.getElementById("taskList"); ul.innerHTML=""; ul.className="tasks sched";
   const isToday=current===todayKey(), now=nowMin();
-  const items=scheduleFor(current);
+  const all=scheduleFor(current,true); const items=all.filter(it=>!it.skipped); const skipped=all.filter(it=>it.skipped);
   const untimed=list.filter(t=>!t.start);
   const carried=untimed.filter(t=>t.carried), anytime=untimed.filter(t=>!t.carried);
   const taskRow=(t, timeLabel)=>{
@@ -1299,6 +1364,7 @@ function renderSchedule(list){
     li.append(tm,cb,tt,more); return li;
   };
   if(carried.length){ ul.appendChild(mk("li","schedhead","Carried over — give these a time or do them first")); carried.forEach(t=>ul.appendChild(taskRow(t,null))); }
+  if(anytime.length){ ul.appendChild(mk("li","schedhead","Today's Must and other tasks")); anytime.forEach(t=>ul.appendChild(taskRow(t,null))); }
   if(items.length) ul.appendChild(mk("li","schedhead","Schedule"));
   items.forEach(it=>{
     const label=[fromMin(it.s), "–"+fromMin(it.e)];
@@ -1317,7 +1383,8 @@ function renderSchedule(list){
     { const bb=mk("div","badges"); bb.appendChild(mk("span","badge",it.kind==="habit"?"routine":"daily block")); tt.appendChild(bb); }
     li.append(tm,mid,tt,mk("span","")); ul.appendChild(li);
   });
-  if(anytime.length){ ul.appendChild(mk("li","schedhead","Anytime today")); anytime.forEach(t=>ul.appendChild(taskRow(t,null))); }
+  if(skipped.length){ ul.appendChild(mk("li","schedhead","Skipped today (late start) — not lost, the Must carries on tomorrow"));
+    skipped.forEach(it=>{ const li=mk("li"); li.classList.add("past"); const tm=mk("div","tm"); tm.textContent="—"; const tt=mk("div","tt"); tt.appendChild(mk("div","t",it.text)); li.append(tm,mk("span",""),tt,mk("span","")); ul.appendChild(li); }); }
   if(!items.length && !untimed.length){ const li=mk("li"); li.style.gridTemplateColumns="1fr"; li.appendChild(mk("span","hint", isToday?"No tasks for today yet.":"No tasks were scheduled on this day.")); ul.appendChild(li); }
 }
 
@@ -1378,9 +1445,21 @@ function renderNowCard(){
   late.appendChild(mk("span","hint","Running late?"));
   [15,30,60].forEach(mn=>{ const bt=mk("button","btn ghost small",`+${mn} min`); bt.onclick=()=>{ const d=day(); const from=(cur?cur.s:now);
       d.late = d.late && d.late.from<=from ? {from:d.late.from, by:d.late.by+mn} : {from, by:(d.late?d.late.by:0)+mn}; save(); renderAll(); }; late.appendChild(bt); });
+  const dd0=S.days[current]||{};
+  if(dd0.wake==null){ const anyTick=Object.values(dd0.blocks||{}).some(Boolean)||Object.values(dd0.habits||{}).some(Boolean);
+    const wb=mk("button", (now>7*60+45 && !anyTick)?"btn small":"btn ghost small","Woke up late?");
+    wb.onclick=()=>{ const r5=Math.round(now/5)*5; const v=prompt("What time did you wake up? (like 14:00)\nToday is rebuilt in the same order from that time. Bedtime stays 00:00; the least important blocks shrink or are skipped.", fromMin(r5));
+      if(v===null) return; const mm=v.trim().match(/^(\d{1,2}):(\d{2})$/); if(!mm){ alert("Use the format 14:00"); return; }
+      const w=Number(mm[1])*60+Number(mm[2]); if(w>=WAKE_STOP){ alert("That's after 23:45 — just sleep on time tonight and start fresh tomorrow."); return; }
+      const d=day(); d.wake=w; delete d.late; save(); renderAll(); };
+    late.appendChild(wb); }
+  else { const rb=mk("button","btn ghost small",`Normal day (undo wake ${fromMin(dd0.wake)})`); rb.onclick=()=>{ delete day().wake; save(); renderAll(); }; late.appendChild(rb); }
   const dlate=S.days[current]&&S.days[current].late;
   if(dlate && dlate.by){ const r=mk("button","btn ghost small","Reset times"); r.onclick=()=>{ delete day().late; save(); renderAll(); }; late.appendChild(r); }
   card.appendChild(late);
+  if(dd0.wake!=null){ const sk=scheduleFor(current,true).filter(it=>it.skipped).map(it=>it.text.split(" — ")[0].split(":")[0]);
+    card.appendChild(mk("p","hint",`Late start from ${fromMin(dd0.wake)}: same order as a normal day, bedtime unchanged.`+(sk.length?` Skipped today: ${sk.join(", ")}.`:" Everything still fits.")+" Today's Must stays the goal; if it isn't finished it carries to tomorrow."));
+  }
   box.appendChild(card);
 }
 
@@ -1481,7 +1560,7 @@ function bind(){
     window.scrollTo(0,0); });
 
   document.getElementById("pStart").value=todayKey();
-  document.getElementById("loadScribe").onclick=()=>{ document.getElementById("pName").value="Clinic Scribe sprint"; document.getElementById("pStart").value=SCRIBE_START; document.getElementById("pText").value=SCRIBE_TEMPLATE; };
+  document.getElementById("loadScribe").onclick=()=>{ document.getElementById("pName").value=SPRINT2_NAME; document.getElementById("pStart").value=SPRINT2_START; document.getElementById("pText").value=SPRINT2_TEMPLATE; };
   document.getElementById("loadTemplate").onclick=()=>{ document.getElementById("pName").value="LegalSpy sprint"; document.getElementById("pText").value=SPRINT_TEMPLATE; };
   document.getElementById("loadClients").onclick=()=>{ document.getElementById("pName").value="Client hunting"; document.getElementById("pText").value=CLIENT_TEMPLATE; };
   document.getElementById("createPlan").onclick=()=>{
