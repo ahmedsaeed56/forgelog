@@ -821,17 +821,22 @@ const DEFAULT_ANCHORS = [
   {id:"a7", text:"Dinner", start:"20:00", end:"21:00", icon:"meal"},
   {id:"p3", text:"Project block 3 — finish or catch up, send work to Claude for review", start:"21:00", end:"22:30", icon:"work"},
   {id:"a9", text:"Free time", start:"23:00", end:"23:45", icon:"break"},
-  {id:"a10", text:"Wind down · no screens · sleep at 12", start:"23:45", end:"23:59", icon:"moon"}
+  {id:"a10", text:"Wind down · no screens · then sleep 7 hours", start:"23:45", end:"23:59", icon:"moon"}
 ];
-const ROUTINE_VERSION = 4;
+const ROUTINE_VERSION = 5;
 // one-time update (v4): fixed timetable + the 2-week Clinic Scribe sprint. Older plans are paused, not deleted.
 function migrate(){
   const v=S.routineV||1; if(v >= ROUTINE_VERSION) return;
-  S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a}));
-  if(!S.plans.find(p=>p.name===SPRINT2_NAME)){
-    S.plans.forEach(p=>{ p.active=false; });
-    createPlan(SPRINT2_NAME, SPRINT2_START, SPRINT2_TEMPLATE);
+  if(v < 4){
+    S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a}));
+    if(!S.plans.find(p=>p.name===SPRINT2_NAME)){
+      S.plans.forEach(p=>{ p.active=false; });
+      createPlan(SPRINT2_NAME, SPRINT2_START, SPRINT2_TEMPLATE);
+    }
   }
+  (S.anchors||[]).forEach(a=>{ if(a.id==="a10" && /sleep at 12/.test(a.text)) a.text="Wind down · no screens · then sleep 7 hours"; });
+  // v5: forget "moved to today" banners that belong to paused plans
+  S.alerts=(S.alerts||[]).filter(a=>{ const t=S.tasks[a.taskId]; return t && (!t.planId || (planOf(t)||{}).active!==false); });
   S.routineV=ROUTINE_VERSION; saveLocal();
 }
 
@@ -847,7 +852,16 @@ let openPlanDay = null;       // {planId, n} expanded in Plans tab
 function freshState(){ return {settings:{deepTarget:7, autoCarry:true}, habits:DEFAULT_HABITS.map(h=>({...h})),
   anchors:DEFAULT_ANCHORS.map(a=>({...a})), timer:null,
   plans:[], tasks:{}, days:{}, slipLog:[], alerts:[], lastRollover:null}; }
-function todayKey(d){ d=d||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function calKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function todayKey(d){ if(d) return calKey(d); const n=new Date(), k=calKey(n);
+  try{ const y=new Date(n); y.setDate(y.getDate()-1); const yk=calKey(y); const yd=S&&S.days&&S.days[yk];
+    const w=getWake(yk); if(w!==420){ const end=1439+(w-420); if(n.getHours()*60+n.getMinutes()+1440 < end) return yk; } }catch(e){}
+  return k; }
+// minutes since the start of the (possibly late-running) current day
+// wake time of a day: set on that day, otherwise carried from the day before (so a night schedule stays until you change it)
+function getWake(k, depth){ depth=depth||0; const d=S&&S.days&&S.days[k]; if(d && d.wake!=null) return d.wake; if(depth>=14) return 420; return getWake(addDays(k,-1), depth+1); }
+function effNow(){ const m=nowMin(); return calKey(new Date())!==todayKey() ? m+1440 : m; }
+function dm(x){ return fromMin(((Math.round(x)%1440)+1440)%1440); }
 function keyToDate(k){ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); }
 function addDays(k,n){ const d=keyToDate(k); d.setDate(d.getDate()+n); return todayKey(d); }
 function fmtDay(k){ return keyToDate(k).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}); }
@@ -1031,7 +1045,7 @@ function renderScale(id,key){ const box=document.getElementById(id); box.innerHT
 function renderAlerts(isToday){
   const box=document.getElementById("alerts"); box.innerHTML="";
   if(!isToday) return;
-  const live=S.alerts.filter(a=>{ const t=S.tasks[a.taskId]; return t && !t.done && !t.dropped && t.date===todayKey(); });
+  const live=S.alerts.filter(a=>{ const t=S.tasks[a.taskId]; return t && !t.done && !t.dropped && t.date===todayKey() && (!t.planId || (planOf(t)||{}).active!==false); });
   S.alerts = live;  // drop stale alerts
   if(S.settings.autoCarry && live.length){
     const div=mk("div","alert"); const h=mk("h3"); const ic=mk("span"); ic.innerHTML=ICONS.carry; ic.style.display="inline-flex";
@@ -1299,28 +1313,12 @@ function lateShift(k, startMin){ const d=S.days[k]; if(!d||!d.late) return 0; re
 
 /* ------------------------------------------------------------------
    LATE WAKE-UP: rebuild today from the wake time. Same order as a normal
-   day, bedtime stays fixed, lowest-priority blocks shrink or are skipped.
+   day — superseded: the whole day now shifts, see applyWake below.
    rule = [minimum minutes, full minutes, priority (1 = most important)]
 ------------------------------------------------------------------ */
-const WAKE_RULES={hv:[30,60,5.5], a3:[60,120,5], a4:[20,30,3], p1:[120,180,1], a5:[30,60,3], p2:[0,180,4],
-  a6:[10,60,8], hq:[0,90,7], a7:[30,60,3], p3:[0,90,6], hs:[15,30,3], a9:[0,45,9]};
-const WAKE_STOP=23*60+45; // everything must fit before wind-down
-function wakeFixed(it){ return it.kind==="anchor" && (it.icon==="moon" || it.id==="a0" || it.id==="a10"); }
-function applyWake(items, wake){
-  const flex=items.filter(it=>!wakeFixed(it)).sort((a,b)=>a.s-b.s);
-  const R=flex.map(it=>{ const r=WAKE_RULES[it.id]; const dur=Math.max(15,it.e-it.s); return r?{min:r[0],full:r[1],pr:r[2]}:{min:0,full:dur,pr:6.5}; });
-  const avail=Math.max(0, WAKE_STOP-wake);
-  const alloc=R.map(r=>r.min); const sum=()=>alloc.reduce((x,y)=>x+y,0);
-  const byLow=R.map((r,i)=>i).sort((a,b)=>R[b].pr-R[a].pr);
-  for(const i of byLow){ if(sum()<=avail) break; if(R[i].pr>1) alloc[i]=0; }
-  if(sum()>avail){ const i=R.findIndex(r=>r.pr===1); if(i>=0) alloc[i]=Math.max(0, avail-(sum()-alloc[i])); }
-  let left=avail-sum();
-  R.map((r,i)=>i).sort((a,b)=>R[a].pr-R[b].pr).forEach(i=>{ const add=Math.max(0,Math.min(R[i].full-alloc[i], left)); alloc[i]+=add; left-=add; });
-  flex.forEach((it,i)=>{ if(R[i].min===0 && alloc[i]>0 && alloc[i]<30) alloc[i]=0; });
-  let t=wake;
-  flex.forEach((it,i)=>{ if(alloc[i]>0){ it.s=t; it.e=t+alloc[i]; t=it.e; } else it.skipped=true; });
-  return items;
-}
+// Late wake-up: the WHOLE day moves by (wake − 07:00). Nothing is shortened or skipped;
+// the day simply runs later into the night, and sleep starts that much later too.
+function applyWake(items, wake){ const sh=wake-420; items.forEach(it=>{ it.s+=sh; it.e+=sh; }); return items; }
 function scheduleFor(k, withSkipped){
   const items=[];
   tasksOn(k).forEach(t=>{ if(t.start) items.push({kind:"task", id:t.id, text:t.text, start:t.start, end:t.end, done:t.done, ref:t}); });
@@ -1328,7 +1326,7 @@ function scheduleFor(k, withSkipped){
   S.habits.forEach(h=>{ if(h.start) items.push({kind:"habit", id:h.id, text:h.text, start:h.start, end:h.end||h.start, done:!!(dd.habits&&dd.habits[h.id]), ref:h}); });
   (S.anchors||[]).forEach(a=>items.push({kind:"anchor", id:a.id, text:a.text, start:a.start, end:a.end, icon:a.icon, done:!!(dd.blocks&&dd.blocks[a.id])}));
   items.forEach(it=>{ it.s=toMin(it.start); it.e=toMin(it.end); if(it.e<=it.s) it.e=it.s+15; });
-  if(dd.wake!=null) applyWake(items, dd.wake);
+  const wk=getWake(k); if(wk!==420) applyWake(items, wk);
   items.forEach(it=>{ if(it.skipped) return; const sh=lateShift(k,it.s); it.s+=sh; it.e+=sh; });
   const out=withSkipped?items:items.filter(it=>!it.skipped);
   return out.sort((a,b)=>(a.skipped-b.skipped) || a.s-b.s || (a.kind==="anchor")-(b.kind==="anchor"));
@@ -1337,7 +1335,7 @@ const ANCHOR_ICON={sun:"☀",meal:"🍽",gym:"🏋",break:"☕",moon:"☾",work:
 
 function renderSchedule(list){
   const ul=document.getElementById("taskList"); ul.innerHTML=""; ul.className="tasks sched";
-  const isToday=current===todayKey(), now=nowMin();
+  const isToday=current===todayKey(), now=effNow();
   const all=scheduleFor(current,true); const items=all.filter(it=>!it.skipped); const skipped=all.filter(it=>it.skipped);
   const untimed=list.filter(t=>!t.start);
   const carried=untimed.filter(t=>t.carried), anytime=untimed.filter(t=>!t.carried);
@@ -1367,7 +1365,7 @@ function renderSchedule(list){
   if(anytime.length){ ul.appendChild(mk("li","schedhead","Today's Must and other tasks")); anytime.forEach(t=>ul.appendChild(taskRow(t,null))); }
   if(items.length) ul.appendChild(mk("li","schedhead","Schedule"));
   items.forEach(it=>{
-    const label=[fromMin(it.s), "–"+fromMin(it.e)];
+    const label=[dm(it.s)+(it.s>=1440?" ⁺¹":""), "–"+dm(it.e)];
     if(it.kind==="task"){ const li=taskRow(it.ref,label);
       if(isToday && now>=it.s && now<it.e) li.classList.add("now"); else if(isToday && now>=it.e && !it.done) li.classList.add("past");
       ul.appendChild(li); return; }
@@ -1410,7 +1408,7 @@ function renderNowCard(){
   const box=document.getElementById("nowCard"); if(!box) return; box.innerHTML="";
   if(current!==todayKey()) return;
   const items=scheduleFor(current); if(!items.length && !S.timer) return;
-  const now=nowMin(); const cur=items.find(it=>now>=it.s && now<it.e && it.kind!=="anchor") || items.find(it=>now>=it.s && now<it.e);
+  const now=effNow(); const cur=items.find(it=>now>=it.s && now<it.e && it.kind!=="anchor") || items.find(it=>now>=it.s && now<it.e);
   const nxt=items.find(it=>it.s>now);
   const card=mk("div","nowcard");
   if(S.timer){
@@ -1427,7 +1425,7 @@ function renderNowCard(){
   if(cur){
     card.appendChild(mk("div","lbl", cur.kind==="anchor" ? "Now" : "Now — do this"));
     card.appendChild(mk("h3","",cur.text));
-    const left=cur.e-now; card.appendChild(mk("div","meta",`${fromMin(cur.s)}–${fromMin(cur.e)} · ${left} min left`));
+    const left=cur.e-now; card.appendChild(mk("div","meta",`${dm(cur.s)}–${dm(cur.e)} · ${left} min left`));
     const bar=mk("div","pbar"); const fill=mk("i"); fill.style.width=Math.min(100,100*(now-cur.s)/(cur.e-cur.s))+"%"; bar.appendChild(fill); card.appendChild(bar);
     const row=mk("div","row");
     if(cur.kind!=="anchor"){
@@ -1437,28 +1435,30 @@ function renderNowCard(){
     card.appendChild(row);
   } else {
     card.appendChild(mk("div","lbl","Free right now"));
-    card.appendChild(mk("h3","", nxt ? `Next at ${fromMin(nxt.s)}: ${nxt.text}` : "Today's schedule is finished — review, rest, sleep on time."));
+    card.appendChild(mk("h3","", nxt ? `Next at ${dm(nxt.s)}: ${nxt.text}` : "Today's schedule is finished — review, rest, sleep on time."));
     const row=mk("div","row"); const f=mk("button","btn small","Start a 25-min focus"); f.onclick=()=>startTimer(25,"Focus block"); row.appendChild(f); card.appendChild(row);
   }
-  if(cur && nxt) card.appendChild(mk("div","next",`Next at ${fromMin(nxt.s)}: ${nxt.text}`));
+  if(cur && nxt) card.appendChild(mk("div","next",`Next at ${dm(nxt.s)}: ${nxt.text}`));
   const late=mk("div","row"); late.style.marginTop="8px";
   late.appendChild(mk("span","hint","Running late?"));
   [15,30,60].forEach(mn=>{ const bt=mk("button","btn ghost small",`+${mn} min`); bt.onclick=()=>{ const d=day(); const from=(cur?cur.s:now);
       d.late = d.late && d.late.from<=from ? {from:d.late.from, by:d.late.by+mn} : {from, by:(d.late?d.late.by:0)+mn}; save(); renderAll(); }; late.appendChild(bt); });
-  const dd0=S.days[current]||{};
-  if(dd0.wake==null){ const anyTick=Object.values(dd0.blocks||{}).some(Boolean)||Object.values(dd0.habits||{}).some(Boolean);
-    const wb=mk("button", (now>7*60+45 && !anyTick)?"btn small":"btn ghost small","Woke up late?");
-    wb.onclick=()=>{ const r5=Math.round(now/5)*5; const v=prompt("What time did you wake up? (like 14:00)\nToday is rebuilt in the same order from that time. Bedtime stays 00:00; the least important blocks shrink or are skipped.", fromMin(r5));
+  const dd0=S.days[current]||{}; const W=getWake(current);
+  const askWake=(txt)=>{ const r5=Math.round(nowMin()/5)*5; const v=prompt(txt, fromMin(W!==420?W:r5));
       if(v===null) return; const mm=v.trim().match(/^(\d{1,2}):(\d{2})$/); if(!mm){ alert("Use the format 14:00"); return; }
-      const w=Number(mm[1])*60+Number(mm[2]); if(w>=WAKE_STOP){ alert("That's after 23:45 — just sleep on time tonight and start fresh tomorrow."); return; }
-      const d=day(); d.wake=w; delete d.late; save(); renderAll(); };
+      const d=day(); d.wake=Number(mm[1])*60+Number(mm[2]); delete d.late; save(); renderAll(); };
+  if(W===420){ const anyTick=Object.values(dd0.blocks||{}).some(Boolean)||Object.values(dd0.habits||{}).some(Boolean);
+    const wb=mk("button", (now>7*60+45 && now<1440 && !anyTick)?"btn small":"btn ghost small","Woke up late?");
+    wb.onclick=()=>askWake("What time did you wake up? (like 14:00)\nYour whole day moves later by the same amount: every block keeps its full length and the day runs on into the night. The next days keep this time until you change it.");
     late.appendChild(wb); }
-  else { const rb=mk("button","btn ghost small",`Normal day (undo wake ${fromMin(dd0.wake)})`); rb.onclick=()=>{ delete day().wake; save(); renderAll(); }; late.appendChild(rb); }
+  else { const cb=mk("button","btn ghost small",`Wake ${dm(W)} · change`); cb.onclick=()=>askWake("What time did you wake up today? (like 13:00)");
+    const rb=mk("button","btn ghost small","Back to 07:00 day"); rb.onclick=()=>{ day().wake=420; save(); renderAll(); };
+    late.append(cb, rb); }
   const dlate=S.days[current]&&S.days[current].late;
   if(dlate && dlate.by){ const r=mk("button","btn ghost small","Reset times"); r.onclick=()=>{ delete day().late; save(); renderAll(); }; late.appendChild(r); }
   card.appendChild(late);
-  if(dd0.wake!=null){ const sk=scheduleFor(current,true).filter(it=>it.skipped).map(it=>it.text.split(" — ")[0].split(":")[0]);
-    card.appendChild(mk("p","hint",`Late start from ${fromMin(dd0.wake)}: same order as a normal day, bedtime unchanged.`+(sk.length?` Skipped today: ${sk.join(", ")}.`:" Everything still fits.")+" Today's Must stays the goal; if it isn't finished it carries to tomorrow."));
+  if(W!==420){ const sh=W-420;
+    card.appendChild(mk("p","hint",`Day starts at ${dm(W)}: whole day moved ${Math.floor(sh/60)}h${sh%60?" "+(sh%60)+"m":""} later, nothing skipped. Today ends at ${dm(1439+sh)}${1439+sh>=1440?" (after midnight)":""}; sleep after that for 7 hours.`));
   }
   box.appendChild(card);
 }
@@ -1613,6 +1613,7 @@ function bind(){
 try{ const t=localStorage.getItem("forgelog.theme"); if(t) document.documentElement.dataset.theme=t; }catch(e){}
 loadLocal();
 migrate();
+current=todayKey();
 rollover();
 bind();
 renderAll();
