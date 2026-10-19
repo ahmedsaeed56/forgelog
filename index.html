@@ -274,7 +274,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
       <textarea id="pText" style="min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem"></textarea></div>
     <div class="row" style="margin-top:10px">
       <button class="btn" id="createPlan">Create plan</button>
-      <button class="btn ghost" id="loadScribe">Load the Clinic Scribe 2-week sprint (19 Oct – 1 Nov)</button>
+      <button class="btn ghost" id="loadScribe">Load the Clinic Scribe build + improve plan (19 Oct – 1 Nov)</button>
       <button class="btn ghost" id="loadTemplate">Load the 18-day LegalSpy sprint</button>
       <button class="btn ghost" id="loadClients">Load the client-hunting plan</button>
     </div>
@@ -759,6 +759,56 @@ const SCRIBE_TEMPLATE = `## Design part 1 · LegalSpy upgrade 1 | Clinic Scribe,
 - 20:45-21:00 Post (LinkedIn + X): Day 19/19 — Portfolio page live + what I'm building next
 - 21:30-22:30 Interview practice: DSA: mixed review — 2 problems`;
 const SCRIBE_START = "2026-10-16";
+const SPRINT3_NAME = "Clinic Scribe · build week + improve week";
+const SPRINT3_START = "2026-10-19";
+const SPRINT3_TEMPLATE = `## Design 1 · steps 1–5 | Clinic Scribe, System design
+- Must: Design steps 1–5 in the doc: problem, constraints (dev on HP CPU-only, target doctor's 8 GB Mac), failures first, numbers (guesses), decompose
+
+## Design 2 · steps 6–10 → review | Clinic Scribe, System design
+- Must: Design steps 6–10: approach, architecture, boundaries, cross-cutting, trade-offs — then Claude reviews the whole doc
+
+## Build 1 · intake + BMI + recording | Clinic Scribe, Build
+- Must: App runs on the HP: intake form (name, age, height, weight) + BMI + record button saves audio
+
+## Build 2 · transcription + test recordings | Clinic Scribe, Speech
+- Must: Local Whisper (small model) transcribes a clip + record the 10 role-play test conversations
+
+## Build 3 · summary | Clinic Scribe, LLM, Structured output
+- Must: Summary: prompt + JSON fields + validation + print template in the doctor's format
+
+## Build 4 · dose + prescription | Clinic Scribe, Rule engines
+- Must: Dose reference as tested formula code (pytest) + prescription print
+
+## Build 5 · end-to-end + demo | Clinic Scribe, Evaluation, Portfolio
+- Must: Full end-to-end run, measure word error rate and speed, fix the slowest part, README + 2-minute demo
+
+## Improve 1 · test set | Clinic Scribe, Evaluation
+- Must: Type exact transcripts of the 10 recordings (test set) and measure the baseline word error rate
+- Half day: jobs, clients and learning as normal
+
+## Improve 2 · Whisper fine-tune run | Clinic Scribe, Fine-tuning
+- Must: Whisper fine-tune run 1 on Kaggle/Colab (public Urdu data + a few of your clips)
+- Half day: jobs, clients and learning as normal
+
+## Improve 3 · compare | Clinic Scribe, Evaluation
+- Must: Measure fine-tuned vs base on the test set; retry, or keep the base model
+- Half day: jobs, clients and learning as normal
+
+## Improve 4 · Mac test | Clinic Scribe, Serving
+- Must: Move to the Mac (if it has arrived): real speed and memory test
+- Half day: jobs, clients and learning as normal
+
+## Improve 5 · doctor demo | Clinic Scribe, Feedback
+- Must: Doctor demo: he tries it, picks his summary format, corrects outputs
+- Half day: jobs, clients and learning as normal
+
+## Improve 6 · doctor's choices | Clinic Scribe, Fine-tuning data
+- Must: Apply the doctor's choices; start saving his corrected summaries for SFT
+- Half day: jobs, clients and learning as normal
+
+## Buffer + results | Clinic Scribe, Portfolio
+- Must: Fixes, results post with before/after numbers, plan the SFT step`;
+
 const SPRINT2_NAME = "Clinic Scribe · 2-week sprint";
 const SPRINT2_START = "2026-10-19";
 const SPRINT2_TEMPLATE = `## Design 1 · problem + constraints | Clinic Scribe, System design
@@ -807,6 +857,7 @@ const SPRINT2_TEMPLATE = `## Design 1 · problem + constraints | Clinic Scribe, 
 const DEFAULT_HABITS = [
   {id:"hv", text:"Visibility hour: 1 LinkedIn post on yesterday's progress · 2–3 job applications · 1–2 Fiverr/Upwork outreaches", slot:"morning", start:"07:00", end:"08:00"},
   {id:"hq", text:"Questions block: only today's parking-lot items, with Claude (the only place deep study is allowed)", slot:"evening", start:"18:30", end:"20:00"},
+  {id:"hl", text:"Learning post: copy today's post from the 17:55 notification and publish it on LinkedIn", slot:"evening", start:"18:00", end:"18:10"},
   {id:"hs", text:"Shutdown: tick today, write tomorrow's first task, one line for tomorrow's post", slot:"evening", start:"22:30", end:"23:00"}
 ];
 // fixed blocks that repeat every day — shown in the schedule, ticked on Today
@@ -823,18 +874,23 @@ const DEFAULT_ANCHORS = [
   {id:"a9", text:"Free time", start:"23:00", end:"23:45", icon:"break"},
   {id:"a10", text:"Wind down · no screens · then sleep 7 hours", start:"23:45", end:"23:59", icon:"moon"}
 ];
-const ROUTINE_VERSION = 5;
+const ROUTINE_VERSION = 6;
 // one-time update (v4): fixed timetable + the 2-week Clinic Scribe sprint. Older plans are paused, not deleted.
 function migrate(){
   const v=S.routineV||1; if(v >= ROUTINE_VERSION) return;
   if(v < 4){
     S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a}));
-    if(!S.plans.find(p=>p.name===SPRINT2_NAME)){
-      S.plans.forEach(p=>{ p.active=false; });
-      createPlan(SPRINT2_NAME, SPRINT2_START, SPRINT2_TEMPLATE);
-    }
+    S.plans.forEach(p=>{ p.active=false; });
   }
   (S.anchors||[]).forEach(a=>{ if(a.id==="a10" && /sleep at 12/.test(a.text)) a.text="Wind down · no screens · then sleep 7 hours"; });
+  // v6: switch to the build-week + improve-week plan, add the learning-post reminder
+  if(v < 6){
+    if(v >= 4){ if(!S.habits.some(h=>h.id==="hl")) S.habits.splice(Math.max(0,S.habits.findIndex(h=>h.id==="hs")),0,{...DEFAULT_HABITS.find(h=>h.id==="hl")}); }
+    if(!S.plans.find(p=>p.name===SPRINT3_NAME)){
+      S.plans.forEach(p=>{ p.active=false; });
+      createPlan(SPRINT3_NAME, SPRINT3_START, SPRINT3_TEMPLATE);
+    }
+  }
   // v5: forget "moved to today" banners that belong to paused plans
   S.alerts=(S.alerts||[]).filter(a=>{ const t=S.tasks[a.taskId]; return t && (!t.planId || (planOf(t)||{}).active!==false); });
   S.routineV=ROUTINE_VERSION; saveLocal();
@@ -1560,7 +1616,7 @@ function bind(){
     window.scrollTo(0,0); });
 
   document.getElementById("pStart").value=todayKey();
-  document.getElementById("loadScribe").onclick=()=>{ document.getElementById("pName").value=SPRINT2_NAME; document.getElementById("pStart").value=SPRINT2_START; document.getElementById("pText").value=SPRINT2_TEMPLATE; };
+  document.getElementById("loadScribe").onclick=()=>{ document.getElementById("pName").value=SPRINT3_NAME; document.getElementById("pStart").value=SPRINT3_START; document.getElementById("pText").value=SPRINT3_TEMPLATE; };
   document.getElementById("loadTemplate").onclick=()=>{ document.getElementById("pName").value="LegalSpy sprint"; document.getElementById("pText").value=SPRINT_TEMPLATE; };
   document.getElementById("loadClients").onclick=()=>{ document.getElementById("pName").value="Client hunting"; document.getElementById("pText").value=CLIENT_TEMPLATE; };
   document.getElementById("createPlan").onclick=()=>{

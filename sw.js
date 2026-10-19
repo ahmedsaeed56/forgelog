@@ -2,7 +2,7 @@
 // lives in this browser's local storage and is never sent anywhere.
 // The page itself is network-first: with internet you always get the newest
 // version; without internet the saved copy opens.
-const CACHE = "forgelog-v12";
+const CACHE = "forgelog-v13";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
